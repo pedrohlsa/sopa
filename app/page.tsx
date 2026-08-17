@@ -4,6 +4,29 @@ import { useState } from "react";
 
 const CHECKOUT_URL = process.env.NEXT_PUBLIC_CHECKOUT_URL?.trim() ?? "";
 
+const partnerKitchens = [
+  { id: "centro", name: "Cozinha parceira", neighborhood: "Centro", latitude: -22.9068, longitude: -43.1729, radiusKm: 7, eta: "35–50 min" },
+  { id: "tijuca", name: "Cozinha parceira", neighborhood: "Tijuca", latitude: -22.9249, longitude: -43.2321, radiusKm: 6, eta: "30–45 min" },
+  { id: "botafogo", name: "Cozinha parceira", neighborhood: "Botafogo", latitude: -22.9519, longitude: -43.1840, radiusKm: 6, eta: "35–50 min" },
+];
+
+type NearbyKitchen = (typeof partnerKitchens)[number] & { distanceKm: number };
+type LocationStatus = "idle" | "locating" | "found" | "outside" | "denied" | "unavailable";
+
+function getDistanceKm(latitude: number, longitude: number, kitchenLatitude: number, kitchenLongitude: number) {
+  const earthRadiusKm = 6371;
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const latitudeDifference = toRadians(kitchenLatitude - latitude);
+  const longitudeDifference = toRadians(kitchenLongitude - longitude);
+  const startLatitude = toRadians(latitude);
+  const endLatitude = toRadians(kitchenLatitude);
+  const haversine =
+    Math.sin(latitudeDifference / 2) ** 2 +
+    Math.cos(startLatitude) * Math.cos(endLatitude) * Math.sin(longitudeDifference / 2) ** 2;
+
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
 const soups = [
   {
     name: "Caldo verde",
@@ -37,6 +60,37 @@ const soups = [
 
 export default function Home() {
   const [notice, setNotice] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
+  const [nearbyKitchens, setNearbyKitchens] = useState<NearbyKitchen[]>([]);
+
+  function findNearbyKitchens() {
+    if (!("geolocation" in navigator)) {
+      setLocationStatus("unavailable");
+      return;
+    }
+
+    setLocationStatus("locating");
+    setNearbyKitchens([]);
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const matches = partnerKitchens
+          .map((kitchen) => ({
+            ...kitchen,
+            distanceKm: getDistanceKm(coords.latitude, coords.longitude, kitchen.latitude, kitchen.longitude),
+          }))
+          .filter((kitchen) => kitchen.distanceKm <= kitchen.radiusKm)
+          .sort((first, second) => first.distanceKm - second.distanceKm);
+
+        setNearbyKitchens(matches);
+        setLocationStatus(matches.length > 0 ? "found" : "outside");
+      },
+      (error) => {
+        setLocationStatus(error.code === error.PERMISSION_DENIED ? "denied" : "unavailable");
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  }
 
   function openCheckout() {
     if (CHECKOUT_URL) {
@@ -56,6 +110,7 @@ export default function Home() {
           <span>Sopa Boa</span>
         </a>
         <nav aria-label="Navegação principal">
+          <a href="#perto-de-voce">Perto de você</a>
           <a href="#cardapio">Cardápio</a>
           <a href="#como-funciona">Como pedir</a>
           <button className="nav-cta" onClick={openCheckout}>Pedir agora</button>
@@ -71,14 +126,14 @@ export default function Home() {
             Escolha a sua e receba sem complicação.
           </p>
           <div className="hero-actions">
-            <button className="primary-button" onClick={openCheckout}>
-              Ver opções e pedir <span aria-hidden="true">→</span>
-            </button>
+            <a className="primary-button" href="#perto-de-voce">
+              Encontrar sopa perto de mim <span aria-hidden="true">→</span>
+            </a>
             <a className="text-link" href="#cardapio">Conhecer o cardápio</a>
           </div>
           <div className="hero-trust" aria-label="Vantagens">
             <span>✓ Pix confirmado na hora</span>
-            <span>✓ Pedido simples e seguro</span>
+            <span>✓ Localização não armazenada</span>
           </div>
         </div>
 
@@ -98,6 +153,84 @@ export default function Home() {
             <span className="status-dot" />
             <div><strong>Pedido fácil</strong><small>Escolha, pague e pronto</small></div>
           </div>
+        </div>
+      </section>
+
+      <section className="locator-section" id="perto-de-voce">
+        <div className="locator-copy">
+          <span className="kicker light">Perto de você</span>
+          <h2>Encontre uma cozinha que entrega na sua região.</h2>
+          <p>
+            Sua localização é usada somente neste navegador para comparar distâncias.
+            Ela não é salva, enviada nem adicionada ao seu perfil.
+          </p>
+          <button className="location-button" onClick={findNearbyKitchens} disabled={locationStatus === "locating"}>
+            <span aria-hidden="true">⌖</span>
+            {locationStatus === "locating" ? "Buscando sua região…" : "Usar minha localização"}
+          </button>
+          <small>O navegador pedirá sua autorização antes de compartilhar a posição.</small>
+        </div>
+
+        <div className="locator-results" aria-live="polite">
+          {locationStatus === "idle" && (
+            <div className="locator-placeholder">
+              <span aria-hidden="true">⌖</span>
+              <strong>Descubra quem entrega aí</strong>
+              <p>Toque no botão para ver as cozinhas parceiras por ordem de proximidade.</p>
+            </div>
+          )}
+
+          {locationStatus === "locating" && (
+            <div className="locator-placeholder">
+              <span className="locator-spinner" aria-hidden="true" />
+              <strong>Procurando cozinhas próximas…</strong>
+              <p>Isso costuma levar apenas alguns segundos.</p>
+            </div>
+          )}
+
+          {locationStatus === "found" && (
+            <div className="nearby-list">
+              <div className="result-heading">
+                <span className="status-dot" />
+                <strong>{nearbyKitchens.length === 1 ? "Encontramos uma opção" : `Encontramos ${nearbyKitchens.length} opções`}</strong>
+              </div>
+              {nearbyKitchens.map((kitchen, index) => (
+                <article className="kitchen-result" key={kitchen.id}>
+                  <span className="result-rank">{index + 1}</span>
+                  <div>
+                    <strong>{kitchen.name} • {kitchen.neighborhood}</strong>
+                    <small>aprox. {kitchen.distanceKm.toFixed(1).replace(".", ",")} km • {kitchen.eta}</small>
+                  </div>
+                  <a href="#cardapio">Ver menu</a>
+                </article>
+              ))}
+              <p className="demo-note">Cozinhas demonstrativas. Serão substituídas pelas parceiras reais.</p>
+            </div>
+          )}
+
+          {locationStatus === "outside" && (
+            <div className="locator-placeholder compact">
+              <span aria-hidden="true">⌖</span>
+              <strong>Ainda não chegamos à sua região</strong>
+              <p>Estamos cadastrando novas cozinhas. Tente novamente em breve.</p>
+            </div>
+          )}
+
+          {locationStatus === "denied" && (
+            <div className="locator-placeholder compact">
+              <span aria-hidden="true">!</span>
+              <strong>Localização não autorizada</strong>
+              <p>Você pode liberar a permissão no navegador e tentar novamente.</p>
+            </div>
+          )}
+
+          {locationStatus === "unavailable" && (
+            <div className="locator-placeholder compact">
+              <span aria-hidden="true">!</span>
+              <strong>Não foi possível obter sua localização</strong>
+              <p>Confira se a localização do aparelho está ativada e tente outra vez.</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -165,7 +298,7 @@ export default function Home() {
         <small>© {new Date().getFullYear()} Sopa Boa. Todos os direitos reservados.</small>
       </footer>
 
-      <button className="mobile-order" onClick={openCheckout}>Pedir pelo Pix</button>
+      <button className="mobile-order" onClick={findNearbyKitchens}>Encontrar sopa perto de mim</button>
 
       <div className={`toast ${notice ? "show" : ""}`} role="status" aria-live="polite">
         O checkout será conectado em breve.
