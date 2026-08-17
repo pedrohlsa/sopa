@@ -29,37 +29,75 @@ function getDistanceKm(latitude: number, longitude: number, kitchenLatitude: num
 
 const soups = [
   {
-    name: "Caldo verde",
-    description: "Batata cremosa, couve fininha e calabresa dourada.",
-    price: "R$ 20",
+    id: "caldo-verde-calabresa",
+    name: "Caldo Verde com Calabresa",
+    description: "Batata cremosa, couve fresquinha e calabresa dourada. O clássico que combina com qualquer noite.",
+    price: "R$ 19,90",
+    size: "500 ml",
+    category: "Mais pedido",
     accent: "green",
     icon: "🥬",
+    featured: true,
   },
   {
-    name: "Canja da casa",
-    description: "Frango desfiado, legumes frescos, arroz e cheiro-verde.",
-    price: "R$ 19",
-    accent: "gold",
-    icon: "🥕",
-  },
-  {
-    name: "Mandioquinha",
-    description: "Creme aveludado com carne-seca desfiada e cebola crocante.",
-    price: "R$ 24",
-    accent: "orange",
-    icon: "🍠",
-  },
-  {
-    name: "Feijão com bacon",
-    description: "Feijão bem temperado, bacon crocante e um toque de pimenta.",
-    price: "R$ 21",
+    id: "feijao-bacon-calabresa",
+    name: "Caldo de Feijão com Bacon e Calabresa",
+    description: "Feijão bem temperado, bacon crocante e calabresa em um caldo cremoso e cheio de sabor.",
+    price: "R$ 19,90",
+    size: "500 ml",
+    category: "Mais pedido",
     accent: "red",
     icon: "🫘",
+    featured: true,
   },
-];
+  {
+    id: "ervilha-bacon-calabresa",
+    name: "Creme de Ervilha com Bacon e Calabresa",
+    description: "Ervilha cremosa com bacon e calabresa dourada. Encorpado, quentinho e muito bem servido.",
+    price: "R$ 20,90",
+    size: "500 ml",
+    category: "Tradicional",
+    accent: "pea",
+    icon: "🫛",
+    featured: false,
+  },
+  {
+    id: "frango-legumes",
+    name: "Sopa de Frango com Legumes",
+    description: "Frango desfiado, legumes selecionados e tempero caseiro em uma sopa leve e reconfortante.",
+    price: "R$ 19,90",
+    size: "500 ml",
+    category: "Leve",
+    accent: "gold",
+    icon: "🥕",
+    featured: false,
+  },
+  {
+    id: "aipim-carne-seca",
+    name: "Caldo de Aipim com Carne-Seca",
+    description: "Aipim bem cremoso com carne-seca desfiada e tempero caseiro. Sabor brasileiro em cada colherada.",
+    price: "R$ 23,90",
+    size: "500 ml",
+    category: "Especial",
+    accent: "cassava",
+    icon: "🍠",
+    featured: false,
+  },
+  {
+    id: "abobora-carne-seca",
+    name: "Creme de Abóbora com Carne-Seca",
+    description: "Creme aveludado de abóbora com carne-seca desfiada, equilibrando cremosidade e muito sabor.",
+    price: "R$ 23,90",
+    size: "500 ml",
+    category: "Especial",
+    accent: "pumpkin",
+    icon: "🎃",
+    featured: false,
+  },
+] as const;
 
 export default function Home() {
-  const [notice, setNotice] = useState(false);
+  const [notice, setNotice] = useState("");
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
   const [nearbyKitchens, setNearbyKitchens] = useState<NearbyKitchen[]>([]);
 
@@ -92,14 +130,21 @@ export default function Home() {
     );
   }
 
-  function openCheckout() {
+  function openCheckout(productId?: string) {
     if (CHECKOUT_URL) {
-      window.location.assign(CHECKOUT_URL);
+      const checkoutUrl = new URL(CHECKOUT_URL, window.location.origin);
+
+      if (productId) {
+        checkoutUrl.searchParams.set("produto", productId);
+      }
+
+      window.location.assign(checkoutUrl.toString());
       return;
     }
 
-    setNotice(true);
-    window.setTimeout(() => setNotice(false), 3600);
+    const selectedSoup = soups.find((soup) => soup.id === productId);
+    setNotice(selectedSoup ? `Checkout de ${selectedSoup.name} será conectado em breve.` : "O checkout será conectado em breve.");
+    window.setTimeout(() => setNotice(""), 5500);
   }
 
   return (
@@ -113,17 +158,17 @@ export default function Home() {
           <a href="#perto-de-voce">Perto de você</a>
           <a href="#cardapio">Cardápio</a>
           <a href="#como-funciona">Como pedir</a>
-          <button className="nav-cta" onClick={openCheckout}>Pedir agora</button>
+          <button className="nav-cta" onClick={() => openCheckout()}>Pedir agora</button>
         </nav>
       </header>
 
       <section className="hero" id="inicio">
         <div className="hero-copy">
-          <div className="eyebrow"><span /> Entrega local • pagamento via Pix</div>
-          <h1>Sopa quentinha, do nosso fogão pra sua casa.</h1>
+          <div className="eyebrow"><span /> Cozinhas locais • entrega no Rio • Pix</div>
+          <h1>Sopa quentinha, pertinho de você.</h1>
           <p className="hero-text">
-            Receitas caprichadas, ingredientes frescos e aquele sabor que abraça.
-            Escolha a sua e receba sem complicação.
+            Encontre cozinhas parceiras na sua região e peça caldos caprichados
+            de 500 ml a partir de R$ 19,90.
           </p>
           <div className="hero-actions">
             <a className="primary-button" href="#perto-de-voce">
@@ -133,6 +178,7 @@ export default function Home() {
           </div>
           <div className="hero-trust" aria-label="Vantagens">
             <span>✓ Pix confirmado na hora</span>
+            <span>✓ Preços de lançamento</span>
             <span>✓ Localização não armazenada</span>
           </div>
         </div>
@@ -237,32 +283,42 @@ export default function Home() {
       <section className="menu-section" id="cardapio">
         <div className="section-heading">
           <div>
-            <span className="kicker">Cardápio</span>
+            <div className="menu-kickers">
+              <span className="kicker">Cardápio</span>
+              <span className="launch-label">Preços de lançamento</span>
+            </div>
             <h2>Qual vai aquecer seu dia?</h2>
           </div>
-          <p>Porções individuais, preparadas no dia e enviadas bem quentinhas.</p>
+          <p>Caldos de 500 ml, preparados no dia e enviados bem quentinhos. A partir de R$ 19,90.</p>
         </div>
 
         <div className="menu-grid">
           {soups.map((soup) => (
-            <article className="menu-card" key={soup.name}>
+            <article className={`menu-card${soup.featured ? " featured" : ""}`} key={soup.id}>
               <div className={`menu-visual ${soup.accent}`} aria-hidden="true">
                 <span>{soup.icon}</span>
               </div>
               <div className="menu-content">
-                <div className="menu-title-row">
-                  <h3>{soup.name}</h3>
-                  <strong>{soup.price}</strong>
+                <div className="menu-meta">
+                  <span className={`menu-badge${soup.featured ? " popular" : ""}`}>{soup.category}</span>
+                  <span className="menu-size">{soup.size}</span>
                 </div>
+                <h3>{soup.name}</h3>
                 <p>{soup.description}</p>
-                <button onClick={openCheckout} aria-label={`Pedir ${soup.name}`}>
-                  Escolher <span aria-hidden="true">＋</span>
-                </button>
+                <div className="menu-card-footer">
+                  <div className="menu-price">
+                    <small>Preço de lançamento</small>
+                    <strong>{soup.price}</strong>
+                  </div>
+                  <button onClick={() => openCheckout(soup.id)} aria-label={`Pedir ${soup.name}, ${soup.size}, por ${soup.price}`}>
+                    Escolher <span aria-hidden="true">＋</span>
+                  </button>
+                </div>
               </div>
             </article>
           ))}
         </div>
-        <p className="menu-note">Cardápio e valores demonstrativos — confirme a disponibilidade no checkout.</p>
+        <p className="menu-note">Sabores sujeitos à disponibilidade da cozinha que atende sua região.</p>
       </section>
 
       <section className="steps-section" id="como-funciona">
@@ -284,7 +340,7 @@ export default function Home() {
           <h2>Hoje combina com sopa.</h2>
           <p>Confira os sabores disponíveis e faça seu pedido pelo Pix.</p>
         </div>
-        <button className="primary-button dark" onClick={openCheckout}>
+        <button className="primary-button dark" onClick={() => openCheckout()}>
           Fazer meu pedido <span aria-hidden="true">→</span>
         </button>
       </section>
@@ -301,7 +357,7 @@ export default function Home() {
       <button className="mobile-order" onClick={findNearbyKitchens}>Encontrar sopa perto de mim</button>
 
       <div className={`toast ${notice ? "show" : ""}`} role="status" aria-live="polite">
-        O checkout será conectado em breve.
+        {notice}
       </div>
     </main>
   );
