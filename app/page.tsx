@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 
-const CHECKOUT_URL = process.env.NEXT_PUBLIC_CHECKOUT_URL?.trim() ?? "";
+const CHECKOUT_URLS = {
+  traditional: "https://paylume.fans/c/sopa-19-90",
+  special: "https://paylume.fans/c/sopa-23-90",
+} as const;
 
 const partnerKitchens = [
   { id: "centro", name: "Cozinha parceira", neighborhood: "Centro", latitude: -22.9068, longitude: -43.1729, radiusKm: 7, eta: "35–50 min" },
@@ -38,6 +41,7 @@ const soups = [
     image: "/sopas/caldo-verde-com-calabresa.jpg",
     imageAlt: "Caldo verde cremoso com couve e rodelas de calabresa",
     featured: true,
+    checkoutTier: "traditional",
   },
   {
     id: "feijao-bacon-calabresa",
@@ -49,17 +53,19 @@ const soups = [
     image: "/sopas/caldo-de-feijao-com-bacon-e-calabresa.jpg",
     imageAlt: "Caldo de feijão cremoso com bacon e rodelas de calabresa",
     featured: true,
+    checkoutTier: "traditional",
   },
   {
     id: "ervilha-bacon-calabresa",
     name: "Creme de Ervilha com Bacon e Calabresa",
     description: "Ervilha cremosa com bacon e calabresa dourada. Encorpado, quentinho e muito bem servido.",
-    price: "R$ 20,90",
+    price: "R$ 19,90",
     size: "500 ml",
     category: "Tradicional",
     image: "/sopas/creme-de-ervilha-com-bacon-e-calabresa.jpg",
     imageAlt: "Creme de ervilha com pedaços de bacon e calabresa",
     featured: false,
+    checkoutTier: "traditional",
   },
   {
     id: "frango-legumes",
@@ -71,6 +77,7 @@ const soups = [
     image: "/sopas/sopa-de-frango-com-legumes.jpg",
     imageAlt: "Sopa de frango desfiado com cenoura, batata e tempero verde",
     featured: false,
+    checkoutTier: "traditional",
   },
   {
     id: "aipim-carne-seca",
@@ -82,6 +89,7 @@ const soups = [
     image: "/sopas/caldo-de-aipim-com-carne-seca.jpg",
     imageAlt: "Caldo cremoso de aipim com carne-seca desfiada",
     featured: false,
+    checkoutTier: "special",
   },
   {
     id: "abobora-carne-seca",
@@ -93,6 +101,7 @@ const soups = [
     image: "/sopas/creme-de-abobora-com-carne-seca.jpg",
     imageAlt: "Creme de abóbora com carne-seca desfiada e cebolinha",
     featured: false,
+    checkoutTier: "special",
   },
 ] as const;
 
@@ -131,20 +140,14 @@ export default function Home() {
   }
 
   function openCheckout(productId?: string) {
-    if (CHECKOUT_URL) {
-      const checkoutUrl = new URL(CHECKOUT_URL, window.location.origin);
+    const selectedSoup = soups.find((soup) => soup.id === productId);
 
-      if (productId) {
-        checkoutUrl.searchParams.set("produto", productId);
-      }
-
-      window.location.assign(checkoutUrl.toString());
+    if (!selectedSoup) {
+      document.querySelector("#cardapio")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
 
-    const selectedSoup = soups.find((soup) => soup.id === productId);
-    setNotice(selectedSoup ? `Checkout de ${selectedSoup.name} será conectado em breve.` : "O checkout será conectado em breve.");
-    window.setTimeout(() => setNotice(""), 5500);
+    window.location.assign(CHECKOUT_URLS[selectedSoup.checkoutTier]);
   }
 
   return (
