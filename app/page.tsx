@@ -496,6 +496,19 @@ export default function Home() {
             </article>
           ))}
         </div>
+        <div className="drink-strip" aria-label="Bebidas disponíveis no checkout">
+          <div className="drink-strip-heading">
+            <span aria-hidden="true">🥤</span>
+            <div>
+              <strong>Vai um refri gelado?</strong>
+              <small>Adicione a bebida no checkout, antes de gerar o Pix.</small>
+            </div>
+          </div>
+          <div className="drink-options">
+            <span><strong>Lata 350 ml</strong><small>R$ 7,99</small></span>
+            <span><strong>Garrafa 2 L</strong><small>R$ 14,99</small></span>
+          </div>
+        </div>
         <p className="menu-note">Sabores sujeitos à disponibilidade da cozinha que atende sua região.</p>
       </section>
 
@@ -578,6 +591,11 @@ export default function Home() {
                 <button className="add-more" type="button" onClick={() => setCartOpen(false)} disabled={cart.length >= MAX_CART_ITEMS}>
                   {cart.length >= MAX_CART_ITEMS ? "Limite de 4 sopas atingido" : "+ Adicionar outro sabor"}
                 </button>
+
+                <div className="checkout-extra-note">
+                  <span aria-hidden="true">🥤</span>
+                  <div><strong>Refrigerante é opcional</strong><small>No checkout você pode adicionar lata por R$ 7,99 ou garrafa de 2 L por R$ 14,99.</small></div>
+                </div>
 
                 <div className="cart-total">
                   <span>Total do pedido</span>
