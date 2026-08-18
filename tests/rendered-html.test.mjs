@@ -46,6 +46,17 @@ test("server-renders the Sopa Boa commercial catalogue", async () => {
     assert.match(html, new RegExp(soup));
   }
 
+  for (const photo of [
+    "caldo-verde-com-calabresa.jpg",
+    "caldo-de-feijao-com-bacon-e-calabresa.jpg",
+    "creme-de-ervilha-com-bacon-e-calabresa.jpg",
+    "sopa-de-frango-com-legumes.jpg",
+    "caldo-de-aipim-com-carne-seca.jpg",
+    "creme-de-abobora-com-carne-seca.jpg",
+  ]) {
+    assert.match(html, new RegExp(photo));
+  }
+
   assert.doesNotMatch(html, /valores demonstrativos/i);
   assert.doesNotMatch(html, /codex-preview|loading skeleton/i);
 });

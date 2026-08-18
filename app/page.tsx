@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 const CHECKOUT_URL = process.env.NEXT_PUBLIC_CHECKOUT_URL?.trim() ?? "";
@@ -35,8 +36,8 @@ const soups = [
     price: "R$ 19,90",
     size: "500 ml",
     category: "Mais pedido",
-    accent: "green",
-    icon: "🥬",
+    image: "/sopas/caldo-verde-com-calabresa.jpg",
+    imageAlt: "Caldo verde cremoso com couve e rodelas de calabresa",
     featured: true,
   },
   {
@@ -46,8 +47,8 @@ const soups = [
     price: "R$ 19,90",
     size: "500 ml",
     category: "Mais pedido",
-    accent: "red",
-    icon: "🫘",
+    image: "/sopas/caldo-de-feijao-com-bacon-e-calabresa.jpg",
+    imageAlt: "Caldo de feijão cremoso com bacon e rodelas de calabresa",
     featured: true,
   },
   {
@@ -57,8 +58,8 @@ const soups = [
     price: "R$ 20,90",
     size: "500 ml",
     category: "Tradicional",
-    accent: "pea",
-    icon: "🫛",
+    image: "/sopas/creme-de-ervilha-com-bacon-e-calabresa.jpg",
+    imageAlt: "Creme de ervilha com pedaços de bacon e calabresa",
     featured: false,
   },
   {
@@ -68,8 +69,8 @@ const soups = [
     price: "R$ 19,90",
     size: "500 ml",
     category: "Leve",
-    accent: "gold",
-    icon: "🥕",
+    image: "/sopas/sopa-de-frango-com-legumes.jpg",
+    imageAlt: "Sopa de frango desfiado com cenoura, batata e tempero verde",
     featured: false,
   },
   {
@@ -79,8 +80,8 @@ const soups = [
     price: "R$ 23,90",
     size: "500 ml",
     category: "Especial",
-    accent: "cassava",
-    icon: "🍠",
+    image: "/sopas/caldo-de-aipim-com-carne-seca.jpg",
+    imageAlt: "Caldo cremoso de aipim com carne-seca desfiada",
     featured: false,
   },
   {
@@ -90,8 +91,8 @@ const soups = [
     price: "R$ 23,90",
     size: "500 ml",
     category: "Especial",
-    accent: "pumpkin",
-    icon: "🎃",
+    image: "/sopas/creme-de-abobora-com-carne-seca.jpg",
+    imageAlt: "Creme de abóbora com carne-seca desfiada e cebolinha",
     featured: false,
   },
 ] as const;
@@ -295,8 +296,15 @@ export default function Home() {
         <div className="menu-grid">
           {soups.map((soup) => (
             <article className={`menu-card${soup.featured ? " featured" : ""}`} key={soup.id}>
-              <div className={`menu-visual ${soup.accent}`} aria-hidden="true">
-                <span>{soup.icon}</span>
+              <div className="menu-visual">
+                <Image
+                  className="soup-photo"
+                  src={soup.image}
+                  alt={soup.imageAlt}
+                  fill
+                  sizes="(max-width: 620px) calc(100vw - 40px), (max-width: 900px) 50vw, 375px"
+                  unoptimized
+                />
               </div>
               <div className="menu-content">
                 <div className="menu-meta">
