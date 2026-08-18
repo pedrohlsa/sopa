@@ -6,7 +6,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://sopa-boa-pix.stguts25.chatgpt.site"),
+  metadataBase: new URL("https://pedirsopa.com.br"),
   title: "Sopa Boa | Sopa delivery perto de você no Rio",
   description: "Encontre cozinhas parceiras e peça caldos de 500 ml a partir de R$ 19,90, com entrega local no Rio e pagamento via Pix.",
   openGraph: {

@@ -1,6 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const META_PIXEL_ID = "1050963361185572";
+const META_CONSENT_KEY = "sopa-meta-consent";
+
+type MetaPixelFunction = ((...args: unknown[]) => void) & {
+  callMethod?: (...args: unknown[]) => void;
+  loaded?: boolean;
+  push?: MetaPixelFunction;
+  queue?: unknown[][];
+  version?: string;
+};
+
+declare global {
+  interface Window {
+    _fbq?: MetaPixelFunction;
+    fbq?: MetaPixelFunction;
+  }
+}
 
 const CHECKOUT_URLS = {
   traditional: "https://paylume.fans/c/sopa-19-90",
@@ -109,6 +127,44 @@ export default function Home() {
   const [notice, setNotice] = useState("");
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
   const [nearbyKitchens, setNearbyKitchens] = useState<NearbyKitchen[]>([]);
+  const [trackingConsent, setTrackingConsent] = useState<"pending" | "accepted" | "declined">("pending");
+
+  useEffect(() => {
+    const savedConsent = window.localStorage.getItem(META_CONSENT_KEY);
+    setTrackingConsent(savedConsent === "accepted" ? "accepted" : savedConsent === "declined" ? "declined" : "pending");
+  }, []);
+
+  useEffect(() => {
+    if (trackingConsent !== "accepted") return;
+
+    if (!window.fbq) {
+      const fbq: MetaPixelFunction = (...args: unknown[]) => {
+        if (fbq.callMethod) fbq.callMethod(...args);
+        else fbq.queue?.push(args);
+      };
+
+      fbq.push = fbq;
+      fbq.loaded = true;
+      fbq.version = "2.0";
+      fbq.queue = [];
+      window.fbq = fbq;
+      window._fbq = fbq;
+
+      const script = document.createElement("script");
+      script.async = true;
+      script.src = "https://connect.facebook.net/en_US/fbevents.js";
+      document.head.appendChild(script);
+    }
+
+    window.fbq("consent", "grant");
+    window.fbq("init", META_PIXEL_ID);
+    window.fbq("track", "PageView");
+  }, [trackingConsent]);
+
+  function saveTrackingConsent(consent: "accepted" | "declined") {
+    window.localStorage.setItem(META_CONSENT_KEY, consent);
+    setTrackingConsent(consent);
+  }
 
   function findNearbyKitchens() {
     if (!("geolocation" in navigator)) {
@@ -147,7 +203,18 @@ export default function Home() {
       return;
     }
 
-    window.location.assign(CHECKOUT_URLS[selectedSoup.checkoutTier]);
+    const value = Number(selectedSoup.price.replace("R$ ", "").replace(",", "."));
+    const eventDetails = {
+      content_ids: [selectedSoup.id],
+      content_name: selectedSoup.name,
+      content_type: "product",
+      currency: "BRL",
+      value,
+    };
+
+    window.fbq?.("track", "ViewContent", eventDetails);
+    window.fbq?.("track", "InitiateCheckout", eventDetails);
+    window.setTimeout(() => window.location.assign(CHECKOUT_URLS[selectedSoup.checkoutTier]), window.fbq ? 120 : 0);
   }
 
   return (
@@ -362,6 +429,19 @@ export default function Home() {
       <div className={`toast ${notice ? "show" : ""}`} role="status" aria-live="polite">
         {notice}
       </div>
+
+      {trackingConsent === "pending" && (
+        <aside className="cookie-banner" aria-label="Preferências de privacidade">
+          <div>
+            <strong>Privacidade do seu jeito</strong>
+            <p>Usamos cookies da Meta somente para medir os anúncios e melhorar as ofertas. Você pode continuar sem aceitar.</p>
+          </div>
+          <div className="cookie-actions">
+            <button className="cookie-decline" onClick={() => saveTrackingConsent("declined")}>Continuar sem cookies</button>
+            <button className="cookie-accept" onClick={() => saveTrackingConsent("accepted")}>Aceitar medição</button>
+          </div>
+        </aside>
+      )}
     </main>
   );
 }
