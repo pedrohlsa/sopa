@@ -505,8 +505,8 @@ export default function Home() {
             </div>
           </div>
           <div className="drink-options">
-            <span><strong>Lata 350 ml</strong><small>R$ 7,99</small></span>
-            <span><strong>Garrafa 2 L</strong><small>R$ 14,99</small></span>
+            <span><strong>Coca-Cola ou Guaraná • lata</strong><small>R$ 7,99</small></span>
+            <span><strong>Coca-Cola ou Guaraná • 2 L</strong><small>R$ 14,99</small></span>
           </div>
         </div>
         <p className="menu-note">Sabores sujeitos à disponibilidade da cozinha que atende sua região.</p>
@@ -594,7 +594,7 @@ export default function Home() {
 
                 <div className="checkout-extra-note">
                   <span aria-hidden="true">🥤</span>
-                  <div><strong>Refrigerante é opcional</strong><small>No checkout você pode adicionar lata por R$ 7,99 ou garrafa de 2 L por R$ 14,99.</small></div>
+                  <div><strong>Coca-Cola ou Guaraná</strong><small>No checkout você escolhe lata por R$ 7,99 ou garrafa de 2 L por R$ 14,99.</small></div>
                 </div>
 
                 <div className="cart-total">
