@@ -61,7 +61,7 @@ test("server-renders the Sopa Boa commercial catalogue", async () => {
   assert.doesNotMatch(html, /codex-preview|loading skeleton/i);
 });
 
-test("preserves location and checkout integration hooks", async () => {
+test("preserves location, cart and checkout integration hooks", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
 
   assert.match(page, /navigator\.geolocation\.getCurrentPosition/);
@@ -69,8 +69,10 @@ test("preserves location and checkout integration hooks", async () => {
   assert.match(page, /Centro/);
   assert.match(page, /Tijuca/);
   assert.match(page, /Botafogo/);
-  assert.match(page, /NEXT_PUBLIC_CHECKOUT_URL/);
-  assert.match(page, /searchParams\.set\("produto", productId\)/);
+  assert.equal((page.match(/https:\/\/paylume\.fans\/c\/sopa-boa-/g) ?? []).length, 14);
+  assert.match(page, /const MAX_CART_ITEMS = 4/);
+  assert.match(page, /window\.sessionStorage\.setItem/);
+  assert.match(page, /window\.location\.assign\(selectedCheckoutUrl\)/);
   assert.match(page, /aria-live="polite"/);
   assert.doesNotMatch(page, /google\.maps|maps\.googleapis/i);
 });

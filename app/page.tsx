@@ -20,10 +20,48 @@ declare global {
   }
 }
 
-const CHECKOUT_URLS = {
-  traditional: "https://paylume.fans/c/sopa-19-90",
-  special: "https://paylume.fans/c/sopa-23-90",
-} as const;
+const MAX_CART_ITEMS = 4;
+
+const CHECKOUT_URLS: Record<string, string> = {
+  "1-0": "https://paylume.fans/c/sopa-boa-1-tradicional",
+  "0-1": "https://paylume.fans/c/sopa-boa-1-especial",
+  "2-0": "https://paylume.fans/c/sopa-boa-2-tradicionais",
+  "1-1": "https://paylume.fans/c/sopa-boa-1-tradicional-1-especial",
+  "0-2": "https://paylume.fans/c/sopa-boa-2-especiais",
+  "3-0": "https://paylume.fans/c/sopa-boa-3-tradicionais",
+  "2-1": "https://paylume.fans/c/sopa-boa-2-tradicionais-1-especial",
+  "1-2": "https://paylume.fans/c/sopa-boa-1-tradicional-2-especiais",
+  "0-3": "https://paylume.fans/c/sopa-boa-3-especiais",
+  "4-0": "https://paylume.fans/c/sopa-boa-4-tradicionais",
+  "3-1": "https://paylume.fans/c/sopa-boa-3-tradicionais-1-especial",
+  "2-2": "https://paylume.fans/c/sopa-boa-2-tradicionais-2-especiais",
+  "1-3": "https://paylume.fans/c/sopa-boa-1-tradicional-3-especiais",
+  "0-4": "https://paylume.fans/c/sopa-boa-4-especiais",
+};
+
+type DeliveryDetails = {
+  name: string;
+  whatsapp: string;
+  cep: string;
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  reference: string;
+  notes: string;
+};
+
+const emptyDeliveryDetails: DeliveryDetails = {
+  name: "",
+  whatsapp: "",
+  cep: "",
+  street: "",
+  number: "",
+  complement: "",
+  neighborhood: "",
+  reference: "",
+  notes: "",
+};
 
 const partnerKitchens = [
   { id: "centro", name: "Cozinha parceira", neighborhood: "Centro", latitude: -22.9068, longitude: -43.1729, radiusKm: 7, eta: "35–50 min" },
@@ -128,6 +166,17 @@ export default function Home() {
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
   const [nearbyKitchens, setNearbyKitchens] = useState<NearbyKitchen[]>([]);
   const [trackingConsent, setTrackingConsent] = useState<"pending" | "accepted" | "declined">("pending");
+  const [cart, setCart] = useState<string[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [deliveryDetails, setDeliveryDetails] = useState<DeliveryDetails>(emptyDeliveryDetails);
+
+  const cartItems = soups
+    .map((soup) => ({ soup, quantity: cart.filter((id) => id === soup.id).length }))
+    .filter((item) => item.quantity > 0);
+  const traditionalCount = cart.filter((id) => soups.find((soup) => soup.id === id)?.checkoutTier === "traditional").length;
+  const specialCount = cart.length - traditionalCount;
+  const cartTotal = traditionalCount * 19.9 + specialCount * 23.9;
+  const selectedCheckoutUrl = CHECKOUT_URLS[`${traditionalCount}-${specialCount}`];
 
   useEffect(() => {
     const savedConsent = window.localStorage.getItem(META_CONSENT_KEY);
@@ -166,6 +215,64 @@ export default function Home() {
     setTrackingConsent(consent);
   }
 
+  function showNotice(message: string) {
+    setNotice(message);
+    window.setTimeout(() => setNotice(""), 2400);
+  }
+
+  function addToCart(productId: string) {
+    const selectedSoup = soups.find((soup) => soup.id === productId);
+    if (!selectedSoup) return;
+
+    if (cart.length >= MAX_CART_ITEMS) {
+      setCartOpen(true);
+      showNotice("O limite inicial é de 4 sopas por pedido.");
+      return;
+    }
+
+    setCart((currentCart) => [...currentCart, productId]);
+    showNotice(`${selectedSoup.name} adicionada ao pedido.`);
+  }
+
+  function removeFromCart(productId: string) {
+    setCart((currentCart) => {
+      const itemIndex = currentCart.lastIndexOf(productId);
+      if (itemIndex < 0) return currentCart;
+      return currentCart.filter((_, index) => index !== itemIndex);
+    });
+  }
+
+  function updateDeliveryDetail(field: keyof DeliveryDetails, value: string) {
+    setDeliveryDetails((currentDetails) => ({ ...currentDetails, [field]: value }));
+  }
+
+  function continueToPayment(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedCheckoutUrl || cart.length === 0) return;
+
+    window.sessionStorage.setItem(
+      "sopa-pedido-atual",
+      JSON.stringify({
+        items: cartItems.map(({ soup, quantity }) => ({ id: soup.id, name: soup.name, quantity })),
+        total: cartTotal,
+        delivery: deliveryDetails,
+        savedAt: new Date().toISOString(),
+      }),
+    );
+
+    const eventDetails = {
+      content_ids: cart,
+      content_name: cartItems.map(({ soup, quantity }) => `${quantity}x ${soup.name}`).join(", "),
+      content_type: "product",
+      currency: "BRL",
+      num_items: cart.length,
+      value: cartTotal,
+    };
+
+    window.fbq?.("track", "InitiateCheckout", eventDetails);
+    window.setTimeout(() => window.location.assign(selectedCheckoutUrl), window.fbq ? 120 : 0);
+  }
+
   function findNearbyKitchens() {
     if (!("geolocation" in navigator)) {
       setLocationStatus("unavailable");
@@ -195,26 +302,13 @@ export default function Home() {
     );
   }
 
-  function openCheckout(productId?: string) {
-    const selectedSoup = soups.find((soup) => soup.id === productId);
-
-    if (!selectedSoup) {
-      document.querySelector("#cardapio")?.scrollIntoView({ behavior: "smooth" });
+  function openCartOrMenu() {
+    if (cart.length > 0) {
+      setCartOpen(true);
       return;
     }
 
-    const value = Number(selectedSoup.price.replace("R$ ", "").replace(",", "."));
-    const eventDetails = {
-      content_ids: [selectedSoup.id],
-      content_name: selectedSoup.name,
-      content_type: "product",
-      currency: "BRL",
-      value,
-    };
-
-    window.fbq?.("track", "ViewContent", eventDetails);
-    window.fbq?.("track", "InitiateCheckout", eventDetails);
-    window.setTimeout(() => window.location.assign(CHECKOUT_URLS[selectedSoup.checkoutTier]), window.fbq ? 120 : 0);
+    document.querySelector("#cardapio")?.scrollIntoView({ behavior: "smooth" });
   }
 
   return (
@@ -228,7 +322,9 @@ export default function Home() {
           <a href="#perto-de-voce">Perto de você</a>
           <a href="#cardapio">Cardápio</a>
           <a href="#como-funciona">Como pedir</a>
-          <button className="nav-cta" onClick={() => openCheckout()}>Pedir agora</button>
+          <button className="nav-cta" onClick={openCartOrMenu}>
+            {cart.length > 0 ? `Carrinho (${cart.length})` : "Pedir agora"}
+          </button>
         </nav>
       </header>
 
@@ -380,8 +476,20 @@ export default function Home() {
                     <small>Preço de lançamento</small>
                     <strong>{soup.price}</strong>
                   </div>
-                  <button onClick={() => openCheckout(soup.id)} aria-label={`Pedir ${soup.name}, ${soup.size}, por ${soup.price}`}>
-                    Escolher <span aria-hidden="true">＋</span>
+                  <button
+                    onClick={() => {
+                      window.fbq?.("track", "ViewContent", {
+                        content_ids: [soup.id],
+                        content_name: soup.name,
+                        content_type: "product",
+                        currency: "BRL",
+                        value: soup.checkoutTier === "traditional" ? 19.9 : 23.9,
+                      });
+                      addToCart(soup.id);
+                    }}
+                    aria-label={`Adicionar ${soup.name}, ${soup.size}, por ${soup.price}`}
+                  >
+                    Adicionar <span aria-hidden="true">＋</span>
                   </button>
                 </div>
               </div>
@@ -410,7 +518,7 @@ export default function Home() {
           <h2>Hoje combina com sopa.</h2>
           <p>Confira os sabores disponíveis e faça seu pedido pelo Pix.</p>
         </div>
-        <button className="primary-button dark" onClick={() => openCheckout()}>
+        <button className="primary-button dark" onClick={openCartOrMenu}>
           Fazer meu pedido <span aria-hidden="true">→</span>
         </button>
       </section>
@@ -424,7 +532,115 @@ export default function Home() {
         <small>© {new Date().getFullYear()} Sopa Boa. Todos os direitos reservados.</small>
       </footer>
 
-      <button className="mobile-order" onClick={findNearbyKitchens}>Encontrar sopa perto de mim</button>
+      <button className="mobile-order" onClick={openCartOrMenu}>
+        {cart.length > 0 ? `Ver pedido (${cart.length}) • ${cartTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}` : "Montar meu pedido"}
+      </button>
+
+      {cartOpen && (
+        <div className="cart-layer" role="presentation">
+          <button className="cart-backdrop" aria-label="Fechar carrinho" onClick={() => setCartOpen(false)} />
+          <aside className="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title">
+            <div className="cart-header">
+              <div>
+                <span className="kicker">Seu pedido</span>
+                <h2 id="cart-title">Monte seu jantar</h2>
+              </div>
+              <button className="cart-close" onClick={() => setCartOpen(false)} aria-label="Fechar carrinho">×</button>
+            </div>
+
+            {cart.length === 0 ? (
+              <div className="empty-cart">
+                <strong>Seu carrinho está vazio</strong>
+                <p>Escolha até quatro sopas do cardápio para continuar.</p>
+                <button onClick={() => setCartOpen(false)}>Ver cardápio</button>
+              </div>
+            ) : (
+              <form className="checkout-form" onSubmit={continueToPayment}>
+                <div className="cart-limit"><strong>{cart.length} de {MAX_CART_ITEMS}</strong> sopas adicionadas</div>
+
+                <div className="cart-items">
+                  {cartItems.map(({ soup, quantity }) => (
+                    <article className="cart-item" key={soup.id}>
+                      <span className="cart-item-photo" style={{ backgroundImage: `url(${soup.image})` }} aria-hidden="true" />
+                      <div>
+                        <strong>{soup.name}</strong>
+                        <small>{soup.size} • {soup.price}</small>
+                      </div>
+                      <div className="quantity-control" aria-label={`Quantidade de ${soup.name}`}>
+                        <button type="button" onClick={() => removeFromCart(soup.id)} aria-label={`Remover uma unidade de ${soup.name}`}>−</button>
+                        <span>{quantity}</span>
+                        <button type="button" onClick={() => addToCart(soup.id)} disabled={cart.length >= MAX_CART_ITEMS} aria-label={`Adicionar outra unidade de ${soup.name}`}>＋</button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <button className="add-more" type="button" onClick={() => setCartOpen(false)} disabled={cart.length >= MAX_CART_ITEMS}>
+                  {cart.length >= MAX_CART_ITEMS ? "Limite de 4 sopas atingido" : "+ Adicionar outro sabor"}
+                </button>
+
+                <div className="cart-total">
+                  <span>Total do pedido</span>
+                  <strong>{cartTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>
+                </div>
+
+                <div className="delivery-form">
+                  <div className="form-heading">
+                    <span>Entrega</span>
+                    <strong>25 a 35 min • até 7 km</strong>
+                  </div>
+
+                  <div className="form-grid">
+                    <label className="wide-field">
+                      Nome
+                      <input required autoComplete="name" value={deliveryDetails.name} onChange={(event) => updateDeliveryDetail("name", event.target.value)} placeholder="Quem vai receber?" />
+                    </label>
+                    <label>
+                      WhatsApp
+                      <input required inputMode="tel" autoComplete="tel" value={deliveryDetails.whatsapp} onChange={(event) => updateDeliveryDetail("whatsapp", event.target.value)} placeholder="(21) 99999-9999" />
+                    </label>
+                    <label>
+                      CEP
+                      <input required inputMode="numeric" autoComplete="postal-code" value={deliveryDetails.cep} onChange={(event) => updateDeliveryDetail("cep", event.target.value)} placeholder="00000-000" />
+                    </label>
+                    <label className="street-field">
+                      Rua
+                      <input required autoComplete="address-line1" value={deliveryDetails.street} onChange={(event) => updateDeliveryDetail("street", event.target.value)} placeholder="Nome da rua" />
+                    </label>
+                    <label className="number-field">
+                      Número
+                      <input required inputMode="numeric" value={deliveryDetails.number} onChange={(event) => updateDeliveryDetail("number", event.target.value)} placeholder="123" />
+                    </label>
+                    <label>
+                      Bairro
+                      <input required autoComplete="address-level3" value={deliveryDetails.neighborhood} onChange={(event) => updateDeliveryDetail("neighborhood", event.target.value)} placeholder="Seu bairro" />
+                    </label>
+                    <label>
+                      Complemento
+                      <input autoComplete="address-line2" value={deliveryDetails.complement} onChange={(event) => updateDeliveryDetail("complement", event.target.value)} placeholder="Apto, bloco…" />
+                    </label>
+                    <label className="wide-field">
+                      Ponto de referência
+                      <input value={deliveryDetails.reference} onChange={(event) => updateDeliveryDetail("reference", event.target.value)} placeholder="Ex.: próximo à praça" />
+                    </label>
+                    <label className="wide-field">
+                      Observações
+                      <textarea value={deliveryDetails.notes} onChange={(event) => updateDeliveryDetail("notes", event.target.value)} placeholder="Alguma orientação para a entrega?" rows={3} />
+                    </label>
+                  </div>
+
+                  <p className="privacy-note">Seus dados não entram na URL de pagamento. Eles ficam temporariamente neste aparelho; a cozinha confirma o endereço pelo WhatsApp.</p>
+                </div>
+
+                <button className="pay-button" type="submit">
+                  Ir para o Pix seguro <span aria-hidden="true">→</span>
+                </button>
+                <small className="pay-helper">Você verá o resumo e o valor exato no checkout da SharkBot.</small>
+              </form>
+            )}
+          </aside>
+        </div>
+      )}
 
       <div className={`toast ${notice ? "show" : ""}`} role="status" aria-live="polite">
         {notice}
