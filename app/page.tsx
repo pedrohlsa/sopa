@@ -507,6 +507,7 @@ export default function Home() {
           <div className="drink-options">
             <span><strong>Coca-Cola ou Guaraná • lata</strong><small>NO CHECKOUT • R$ 7,99</small></span>
             <span><strong>Coca-Cola ou Guaraná • 2 L</strong><small>NO CHECKOUT • R$ 14,99</small></span>
+            <span><strong>2 pães franceses</strong><small>NO CHECKOUT • R$ 2,99</small></span>
           </div>
         </div>
         <p className="menu-note">Sabores sujeitos à disponibilidade da cozinha que atende sua região.</p>
@@ -594,7 +595,7 @@ export default function Home() {
 
                 <div className="checkout-extra-note">
                   <span aria-hidden="true">🥤</span>
-                  <div><strong>Coca-Cola ou Guaraná</strong><small>No checkout você escolhe lata por R$ 7,99 ou garrafa de 2 L por R$ 14,99.</small></div>
+                  <div><strong>Bebidas e pães</strong><small>No checkout você pode adicionar refrigerante e 2 pães franceses por R$ 2,99.</small></div>
                 </div>
 
                 <div className="cart-total">
