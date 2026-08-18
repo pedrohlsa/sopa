@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 
 const CHECKOUT_URL = process.env.NEXT_PUBLIC_CHECKOUT_URL?.trim() ?? "";
@@ -296,15 +295,8 @@ export default function Home() {
         <div className="menu-grid">
           {soups.map((soup) => (
             <article className={`menu-card${soup.featured ? " featured" : ""}`} key={soup.id}>
-              <div className="menu-visual">
-                <Image
-                  className="soup-photo"
-                  src={soup.image}
-                  alt={soup.imageAlt}
-                  fill
-                  sizes="(max-width: 620px) calc(100vw - 40px), (max-width: 900px) 50vw, 375px"
-                  unoptimized
-                />
+              <div className="menu-visual" role="img" aria-label={soup.imageAlt}>
+                <span className="soup-photo" style={{ backgroundImage: `url(${soup.image})` }} aria-hidden="true" />
               </div>
               <div className="menu-content">
                 <div className="menu-meta">
