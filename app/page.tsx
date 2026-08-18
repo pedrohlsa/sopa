@@ -500,13 +500,13 @@ export default function Home() {
           <div className="drink-strip-heading">
             <span aria-hidden="true">🥤</span>
             <div>
-              <strong>Vai um refri gelado?</strong>
-              <small>Adicione a bebida no checkout, antes de gerar o Pix.</small>
+              <strong>REFRIGERANTES — ESCOLHA NO CHECKOUT</strong>
+              <small>Estas opções não são botões. Adicione a bebida depois de clicar em “Ir para o checkout”.</small>
             </div>
           </div>
           <div className="drink-options">
-            <span><strong>Coca-Cola ou Guaraná • lata</strong><small>R$ 7,99</small></span>
-            <span><strong>Coca-Cola ou Guaraná • 2 L</strong><small>R$ 14,99</small></span>
+            <span><strong>Coca-Cola ou Guaraná • lata</strong><small>NO CHECKOUT • R$ 7,99</small></span>
+            <span><strong>Coca-Cola ou Guaraná • 2 L</strong><small>NO CHECKOUT • R$ 14,99</small></span>
           </div>
         </div>
         <p className="menu-note">Sabores sujeitos à disponibilidade da cozinha que atende sua região.</p>
