@@ -38,3 +38,9 @@ yarn-error.log*
 /.wrangler/
 /outputs/
 /work/
+
+# build artifacts
+tsconfig.tsbuildinfo
+
+# local tooling
+/.claude/

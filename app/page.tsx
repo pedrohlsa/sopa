@@ -21,6 +21,7 @@ declare global {
 }
 
 const MAX_CART_ITEMS = 4;
+const MAX_KITCHEN_RESULTS = 1;
 
 const CHECKOUT_URLS: Record<string, string> = {
   "1-0": "https://paylume.fans/c/sopa-boa-1-tradicional",
@@ -64,9 +65,93 @@ const emptyDeliveryDetails: DeliveryDetails = {
 };
 
 const partnerKitchens = [
-  { id: "centro", name: "Cozinha parceira", neighborhood: "Centro", latitude: -22.9068, longitude: -43.1729, radiusKm: 7, eta: "35–50 min" },
-  { id: "tijuca", name: "Cozinha parceira", neighborhood: "Tijuca", latitude: -22.9249, longitude: -43.2321, radiusKm: 6, eta: "30–45 min" },
-  { id: "botafogo", name: "Cozinha parceira", neighborhood: "Botafogo", latitude: -22.9519, longitude: -43.1840, radiusKm: 6, eta: "35–50 min" },
+  { id: "bento-ribeiro", name: "Cozinha parceira", neighborhood: "Bento Ribeiro", city: "Rio de Janeiro", latitude: -22.867, longitude: -43.361, radiusKm: 7, eta: "25–35 min" },
+  { id: "vila-da-penha", name: "Cozinha parceira", neighborhood: "Vila da Penha", city: "Rio de Janeiro", latitude: -22.847, longitude: -43.313, radiusKm: 7, eta: "25–35 min" },
+  { id: "cordovil", name: "Cozinha parceira", neighborhood: "Cordovil", city: "Rio de Janeiro", latitude: -22.826, longitude: -43.307, radiusKm: 7, eta: "25–35 min" },
+  { id: "penha", name: "Cozinha parceira", neighborhood: "Penha", city: "Rio de Janeiro", latitude: -22.835, longitude: -43.272, radiusKm: 7, eta: "25–35 min" },
+  { id: "manguinhos", name: "Cozinha parceira", neighborhood: "Manguinhos", city: "Rio de Janeiro", latitude: -22.873, longitude: -43.254, radiusKm: 7, eta: "25–35 min" },
+  { id: "ramos", name: "Cozinha parceira", neighborhood: "Ramos", city: "Rio de Janeiro", latitude: -22.853, longitude: -43.253, radiusKm: 7, eta: "25–35 min" },
+  { id: "bonsucesso", name: "Cozinha parceira", neighborhood: "Bonsucesso", city: "Rio de Janeiro", latitude: -22.867, longitude: -43.251, radiusKm: 7, eta: "25–35 min" },
+  { id: "portuguesa", name: "Cozinha parceira", neighborhood: "Portuguesa", city: "Rio de Janeiro", latitude: -22.8, longitude: -43.207, radiusKm: 7, eta: "25–35 min" },
+  { id: "centro", name: "Cozinha parceira", neighborhood: "Centro", city: "Rio de Janeiro", latitude: -22.905, longitude: -43.177, radiusKm: 7, eta: "25–35 min" },
+  { id: "saude", name: "Cozinha parceira", neighborhood: "Saúde", city: "Rio de Janeiro", latitude: -22.897, longitude: -43.182, radiusKm: 7, eta: "25–35 min" },
+  { id: "estacio", name: "Cozinha parceira", neighborhood: "Estácio", city: "Rio de Janeiro", latitude: -22.919, longitude: -43.204, radiusKm: 7, eta: "25–35 min" },
+  { id: "santa-teresa", name: "Cozinha parceira", neighborhood: "Santa Teresa", city: "Rio de Janeiro", latitude: -22.923, longitude: -43.188, radiusKm: 7, eta: "25–35 min" },
+  { id: "flamengo", name: "Cozinha parceira", neighborhood: "Flamengo", city: "Rio de Janeiro", latitude: -22.935, longitude: -43.175, radiusKm: 7, eta: "25–35 min" },
+  { id: "botafogo", name: "Cozinha parceira", neighborhood: "Botafogo", city: "Rio de Janeiro", latitude: -22.951, longitude: -43.184, radiusKm: 7, eta: "25–35 min" },
+  { id: "copacabana", name: "Cozinha parceira", neighborhood: "Copacabana", city: "Rio de Janeiro", latitude: -22.969, longitude: -43.186, radiusKm: 7, eta: "25–35 min" },
+  { id: "ipanema", name: "Cozinha parceira", neighborhood: "Ipanema", city: "Rio de Janeiro", latitude: -22.983, longitude: -43.205, radiusKm: 7, eta: "25–35 min" },
+  { id: "leblon", name: "Cozinha parceira", neighborhood: "Leblon", city: "Rio de Janeiro", latitude: -22.985, longitude: -43.224, radiusKm: 7, eta: "25–35 min" },
+  { id: "gavea", name: "Cozinha parceira", neighborhood: "Gávea", city: "Rio de Janeiro", latitude: -22.977, longitude: -43.231, radiusKm: 7, eta: "25–35 min" },
+  { id: "vidigal", name: "Cozinha parceira", neighborhood: "Vidigal", city: "Rio de Janeiro", latitude: -22.996, longitude: -43.24, radiusKm: 7, eta: "25–35 min" },
+  { id: "gavea-2", name: "Cozinha parceira", neighborhood: "Gávea", city: "Rio de Janeiro", latitude: -22.983, longitude: -43.242, radiusKm: 7, eta: "25–35 min" },
+  { id: "tijuca", name: "Cozinha parceira", neighborhood: "Tijuca", city: "Rio de Janeiro", latitude: -22.94, longitude: -43.248, radiusKm: 7, eta: "25–35 min" },
+  { id: "tijuca-2", name: "Cozinha parceira", neighborhood: "Tijuca", city: "Rio de Janeiro", latitude: -22.918, longitude: -43.214, radiusKm: 7, eta: "25–35 min" },
+  { id: "maracana", name: "Cozinha parceira", neighborhood: "Maracanã", city: "Rio de Janeiro", latitude: -22.912, longitude: -43.231, radiusKm: 7, eta: "25–35 min" },
+  { id: "benfica", name: "Cozinha parceira", neighborhood: "Benfica", city: "Rio de Janeiro", latitude: -22.893, longitude: -43.235, radiusKm: 7, eta: "25–35 min" },
+  { id: "jacare", name: "Cozinha parceira", neighborhood: "Jacaré", city: "Rio de Janeiro", latitude: -22.894, longitude: -43.252, radiusKm: 7, eta: "25–35 min" },
+  { id: "vila-isabel", name: "Cozinha parceira", neighborhood: "Vila Isabel", city: "Rio de Janeiro", latitude: -22.917, longitude: -43.251, radiusKm: 7, eta: "25–35 min" },
+  { id: "grajau", name: "Cozinha parceira", neighborhood: "Grajaú", city: "Rio de Janeiro", latitude: -22.924, longitude: -43.261, radiusKm: 7, eta: "25–35 min" },
+  { id: "andarai", name: "Cozinha parceira", neighborhood: "Andaraí", city: "Rio de Janeiro", latitude: -22.927, longitude: -43.251, radiusKm: 7, eta: "25–35 min" },
+  { id: "meier", name: "Cozinha parceira", neighborhood: "Méier", city: "Rio de Janeiro", latitude: -22.905, longitude: -43.28, radiusKm: 7, eta: "25–35 min" },
+  { id: "cachambi", name: "Cozinha parceira", neighborhood: "Cachambi", city: "Rio de Janeiro", latitude: -22.889, longitude: -43.275, radiusKm: 7, eta: "25–35 min" },
+  { id: "piedade", name: "Cozinha parceira", neighborhood: "Piedade", city: "Rio de Janeiro", latitude: -22.89, longitude: -43.31, radiusKm: 7, eta: "25–35 min" },
+  { id: "quintino-bocaiuva", name: "Cozinha parceira", neighborhood: "Quintino Bocaiúva", city: "Rio de Janeiro", latitude: -22.89, longitude: -43.322, radiusKm: 7, eta: "25–35 min" },
+  { id: "madureira", name: "Cozinha parceira", neighborhood: "Madureira", city: "Rio de Janeiro", latitude: -22.872, longitude: -43.337, radiusKm: 7, eta: "25–35 min" },
+  { id: "bento-ribeiro-2", name: "Cozinha parceira", neighborhood: "Bento Ribeiro", city: "Rio de Janeiro", latitude: -22.866, longitude: -43.36, radiusKm: 7, eta: "25–35 min" },
+  { id: "marechal-hermes", name: "Cozinha parceira", neighborhood: "Marechal Hermes", city: "Rio de Janeiro", latitude: -22.857, longitude: -43.366, radiusKm: 7, eta: "25–35 min" },
+  { id: "rocha-miranda", name: "Cozinha parceira", neighborhood: "Rocha Miranda", city: "Rio de Janeiro", latitude: -22.85, longitude: -43.347, radiusKm: 7, eta: "25–35 min" },
+  { id: "coelho-neto", name: "Cozinha parceira", neighborhood: "Coelho Neto", city: "Rio de Janeiro", latitude: -22.831, longitude: -43.347, radiusKm: 7, eta: "25–35 min" },
+  { id: "iraja", name: "Cozinha parceira", neighborhood: "Irajá", city: "Rio de Janeiro", latitude: -22.835, longitude: -43.324, radiusKm: 7, eta: "25–35 min" },
+  { id: "jardim-america", name: "Cozinha parceira", neighborhood: "Jardim América", city: "Rio de Janeiro", latitude: -22.808, longitude: -43.323, radiusKm: 7, eta: "25–35 min" },
+  { id: "vigario-geral", name: "Cozinha parceira", neighborhood: "Vigário Geral", city: "Rio de Janeiro", latitude: -22.811, longitude: -43.314, radiusKm: 7, eta: "25–35 min" },
+  { id: "pavuna", name: "Cozinha parceira", neighborhood: "Pavuna", city: "Rio de Janeiro", latitude: -22.817, longitude: -43.37, radiusKm: 7, eta: "25–35 min" },
+  { id: "pavuna-2", name: "Cozinha parceira", neighborhood: "Pavuna", city: "Rio de Janeiro", latitude: -22.812, longitude: -43.359, radiusKm: 7, eta: "25–35 min" },
+  { id: "vila-zulmira", name: "Cozinha parceira", neighborhood: "Vila Zulmira", city: "São João de Meriti", latitude: -22.785, longitude: -43.367, radiusKm: 7, eta: "25–35 min" },
+  { id: "coelho-da-rocha", name: "Cozinha parceira", neighborhood: "Coelho da Rocha", city: "São João de Meriti", latitude: -22.776, longitude: -43.382, radiusKm: 7, eta: "25–35 min" },
+  { id: "parque-cruz-alta", name: "Cozinha parceira", neighborhood: "Parque Cruz Alta", city: "São João de Meriti", latitude: -22.773, longitude: -43.359, radiusKm: 7, eta: "25–35 min" },
+  { id: "anchieta", name: "Cozinha parceira", neighborhood: "Anchieta", city: "Rio de Janeiro", latitude: -22.823, longitude: -43.399, radiusKm: 7, eta: "25–35 min" },
+  { id: "anchieta-2", name: "Cozinha parceira", neighborhood: "Anchieta", city: "Rio de Janeiro", latitude: -22.836, longitude: -43.409, radiusKm: 7, eta: "25–35 min" },
+  { id: "centro-2", name: "Cozinha parceira", neighborhood: "Centro", city: "Nilópolis", latitude: -22.807, longitude: -43.424, radiusKm: 7, eta: "25–35 min" },
+  { id: "cabuis", name: "Cozinha parceira", neighborhood: "Cabuís", city: "Nilópolis", latitude: -22.808, longitude: -43.404, radiusKm: 7, eta: "25–35 min" },
+  { id: "centro-3", name: "Cozinha parceira", neighborhood: "Centro", city: "Mesquita", latitude: -22.784, longitude: -43.428, radiusKm: 7, eta: "25–35 min" },
+  { id: "sao-francisco-de-assis", name: "Cozinha parceira", neighborhood: "São Francisco de Assis", city: "Belford Roxo", latitude: -22.73, longitude: -43.41, radiusKm: 7, eta: "25–35 min" },
+  { id: "parque-sao-bernardo", name: "Cozinha parceira", neighborhood: "Parque São Bernardo", city: "Belford Roxo", latitude: -22.727, longitude: -43.383, radiusKm: 7, eta: "25–35 min" },
+  { id: "wona", name: "Cozinha parceira", neighborhood: "Wona", city: "Belford Roxo", latitude: -22.723, longitude: -43.348, radiusKm: 7, eta: "25–35 min" },
+  { id: "cabucu", name: "Cozinha parceira", neighborhood: "Cabuçu", city: "Nova Iguaçu", latitude: -22.773, longitude: -43.539, radiusKm: 7, eta: "25–35 min" },
+  { id: "jardim-palmares", name: "Cozinha parceira", neighborhood: "Jardim Palmares", city: "Nova Iguaçu", latitude: -22.759, longitude: -43.451, radiusKm: 7, eta: "25–35 min" },
+  { id: "ouro-preto", name: "Cozinha parceira", neighborhood: "Ouro Preto", city: "Nova Iguaçu", latitude: -22.753, longitude: -43.493, radiusKm: 7, eta: "25–35 min" },
+  { id: "centro-4", name: "Cozinha parceira", neighborhood: "Centro", city: "Nova Iguaçu", latitude: -22.759, longitude: -43.447, radiusKm: 7, eta: "25–35 min" },
+  { id: "jardim-tropical", name: "Cozinha parceira", neighborhood: "Jardim Tropical", city: "Nova Iguaçu", latitude: -22.753, longitude: -43.429, radiusKm: 7, eta: "25–35 min" },
+  { id: "vila-anita", name: "Cozinha parceira", neighborhood: "Vila Anita", city: "Nova Iguaçu", latitude: -22.759, longitude: -43.451, radiusKm: 7, eta: "25–35 min" },
+  { id: "austin", name: "Cozinha parceira", neighborhood: "Austin", city: "Rio de Janeiro", latitude: -22.72, longitude: -43.523, radiusKm: 7, eta: "25–35 min" },
+  { id: "jardim-sao-vicente", name: "Cozinha parceira", neighborhood: "Jardim São Vicente", city: "Nova Iguaçu", latitude: -22.716, longitude: -43.438, radiusKm: 7, eta: "25–35 min" },
+  { id: "vila-iguacuana", name: "Cozinha parceira", neighborhood: "Vila Iguacuana", city: "Nova Iguaçu", latitude: -22.685, longitude: -43.461, radiusKm: 7, eta: "25–35 min" },
+  { id: "cidade-jardim-parque-estoril", name: "Cozinha parceira", neighborhood: "Cidade Jardim Parque Estoril", city: "Nova Iguaçu", latitude: -22.759, longitude: -43.451, radiusKm: 7, eta: "25–35 min" },
+  { id: "sion", name: "Cozinha parceira", neighborhood: "Sion", city: "Queimados", latitude: -22.72, longitude: -43.576, radiusKm: 7, eta: "25–35 min" },
+  { id: "primavera", name: "Cozinha parceira", neighborhood: "Primavera", city: "Queimados", latitude: -22.711, longitude: -43.562, radiusKm: 7, eta: "25–35 min" },
+  { id: "realengo", name: "Cozinha parceira", neighborhood: "Realengo", city: "Rio de Janeiro", latitude: -22.888, longitude: -43.432, radiusKm: 7, eta: "25–35 min" },
+  { id: "realengo-2", name: "Cozinha parceira", neighborhood: "Realengo", city: "Rio de Janeiro", latitude: -22.864, longitude: -43.434, radiusKm: 7, eta: "25–35 min" },
+  { id: "bangu", name: "Cozinha parceira", neighborhood: "Bangu", city: "Rio de Janeiro", latitude: -22.887, longitude: -43.469, radiusKm: 7, eta: "25–35 min" },
+  { id: "bangu-2", name: "Cozinha parceira", neighborhood: "Bangu", city: "Rio de Janeiro", latitude: -22.862, longitude: -43.472, radiusKm: 7, eta: "25–35 min" },
+  { id: "bangu-3", name: "Cozinha parceira", neighborhood: "Bangu", city: "Rio de Janeiro", latitude: -22.85, longitude: -43.468, radiusKm: 7, eta: "25–35 min" },
+  { id: "anil", name: "Cozinha parceira", neighborhood: "Anil", city: "Rio de Janeiro", latitude: -22.956, longitude: -43.338, radiusKm: 7, eta: "25–35 min" },
+  { id: "pechincha", name: "Cozinha parceira", neighborhood: "Pechincha", city: "Rio de Janeiro", latitude: -22.926, longitude: -43.346, radiusKm: 7, eta: "25–35 min" },
+  { id: "tanque", name: "Cozinha parceira", neighborhood: "Tanque", city: "Rio de Janeiro", latitude: -22.915, longitude: -43.347, radiusKm: 7, eta: "25–35 min" },
+  { id: "taquara", name: "Cozinha parceira", neighborhood: "Taquara", city: "Rio de Janeiro", latitude: -22.915, longitude: -43.381, radiusKm: 7, eta: "25–35 min" },
+  { id: "taquara-2", name: "Cozinha parceira", neighborhood: "Taquara", city: "Rio de Janeiro", latitude: -22.916, longitude: -43.386, radiusKm: 7, eta: "25–35 min" },
+  { id: "tanque-2", name: "Cozinha parceira", neighborhood: "Tanque", city: "Rio de Janeiro", latitude: -22.917, longitude: -43.358, radiusKm: 7, eta: "25–35 min" },
+  { id: "vila-valqueire", name: "Cozinha parceira", neighborhood: "Vila Valqueire", city: "Rio de Janeiro", latitude: -22.889, longitude: -43.359, radiusKm: 7, eta: "25–35 min" },
+  { id: "osvaldo-cruz", name: "Cozinha parceira", neighborhood: "Osvaldo Cruz", city: "Rio de Janeiro", latitude: -22.873, longitude: -43.352, radiusKm: 7, eta: "25–35 min" },
+  { id: "bento-ribeiro-3", name: "Cozinha parceira", neighborhood: "Bento Ribeiro", city: "Rio de Janeiro", latitude: -22.866, longitude: -43.359, radiusKm: 7, eta: "25–35 min" },
+  { id: "marechal-hermes-2", name: "Cozinha parceira", neighborhood: "Marechal Hermes", city: "Rio de Janeiro", latitude: -22.868, longitude: -43.375, radiusKm: 7, eta: "25–35 min" },
+  { id: "rocha-miranda-2", name: "Cozinha parceira", neighborhood: "Rocha Miranda", city: "Rio de Janeiro", latitude: -22.85, longitude: -43.347, radiusKm: 7, eta: "25–35 min" },
+  { id: "coelho-neto-2", name: "Cozinha parceira", neighborhood: "Coelho Neto", city: "Rio de Janeiro", latitude: -22.832, longitude: -43.35, radiusKm: 7, eta: "25–35 min" },
+  { id: "curicica", name: "Cozinha parceira", neighborhood: "Curicica", city: "Rio de Janeiro", latitude: -22.952, longitude: -43.385, radiusKm: 7, eta: "25–35 min" },
+  { id: "barra-olimpica", name: "Cozinha parceira", neighborhood: "Barra Olímpica", city: "Rio de Janeiro", latitude: -22.973, longitude: -43.397, radiusKm: 7, eta: "25–35 min" },
+  { id: "vargem-pequena", name: "Cozinha parceira", neighborhood: "Vargem Pequena", city: "Rio de Janeiro", latitude: -22.99, longitude: -43.46, radiusKm: 7, eta: "25–35 min" },
+  { id: "vargem-grande", name: "Cozinha parceira", neighborhood: "Vargem Grande", city: "Rio de Janeiro", latitude: -22.98, longitude: -43.494, radiusKm: 7, eta: "25–35 min" },
+  { id: "recreio-dos-bandeirantes", name: "Cozinha parceira", neighborhood: "Recreio dos Bandeirantes", city: "Rio de Janeiro", latitude: -23.016, longitude: -43.466, radiusKm: 7, eta: "25–35 min" },
 ];
 
 type NearbyKitchen = (typeof partnerKitchens)[number] & { distanceKm: number };
@@ -404,19 +489,21 @@ export default function Home() {
             <div className="nearby-list">
               <div className="result-heading">
                 <span className="status-dot" />
-                <strong>{nearbyKitchens.length === 1 ? "Encontramos uma opção" : `Encontramos ${nearbyKitchens.length} opções`}</strong>
+                <strong>{nearbyKitchens.length === 1 ? "Encontramos uma cozinha perto de você" : `Encontramos ${nearbyKitchens.length} cozinhas perto de você`}</strong>
               </div>
-              {nearbyKitchens.map((kitchen, index) => (
+              {nearbyKitchens.slice(0, MAX_KITCHEN_RESULTS).map((kitchen, index) => (
                 <article className="kitchen-result" key={kitchen.id}>
                   <span className="result-rank">{index + 1}</span>
                   <div>
                     <strong>{kitchen.name} • {kitchen.neighborhood}</strong>
-                    <small>aprox. {kitchen.distanceKm.toFixed(1).replace(".", ",")} km • {kitchen.eta}</small>
+                    <small>{kitchen.city} • aprox. {kitchen.distanceKm.toFixed(1).replace(".", ",")} km • {kitchen.eta}</small>
                   </div>
                   <a href="#cardapio">Ver menu</a>
                 </article>
               ))}
-              <p className="demo-note">Cozinhas demonstrativas. Serão substituídas pelas parceiras reais.</p>
+              {nearbyKitchens.length > MAX_KITCHEN_RESULTS && (
+                <p className="demo-note">{MAX_KITCHEN_RESULTS === 1 ? "Mostrando a mais próxima." : `Mostrando as ${MAX_KITCHEN_RESULTS} mais próximas.`}</p>
+              )}
             </div>
           )}
 
