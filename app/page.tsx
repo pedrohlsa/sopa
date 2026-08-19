@@ -152,6 +152,17 @@ const partnerKitchens = [
   { id: "vargem-pequena", name: "Cozinha parceira", neighborhood: "Vargem Pequena", city: "Rio de Janeiro", latitude: -22.99, longitude: -43.46, radiusKm: 7, eta: "25–35 min" },
   { id: "vargem-grande", name: "Cozinha parceira", neighborhood: "Vargem Grande", city: "Rio de Janeiro", latitude: -22.98, longitude: -43.494, radiusKm: 7, eta: "25–35 min" },
   { id: "recreio-dos-bandeirantes", name: "Cozinha parceira", neighborhood: "Recreio dos Bandeirantes", city: "Rio de Janeiro", latitude: -23.016, longitude: -43.466, radiusKm: 7, eta: "25–35 min" },
+  { id: "dr-laureano", name: "Cozinha parceira", neighborhood: "Dr. Laureano", city: "Duque de Caxias", latitude: -22.766, longitude: -43.3, radiusKm: 7, eta: "25–35 min" },
+  { id: "parque-sao-bento", name: "Cozinha parceira", neighborhood: "Parque São Bento", city: "Duque de Caxias", latitude: -22.743, longitude: -43.309, radiusKm: 7, eta: "25–35 min" },
+  { id: "vila-actura", name: "Cozinha parceira", neighborhood: "Vila Actura", city: "Duque de Caxias", latitude: -22.704, longitude: -43.255, radiusKm: 7, eta: "25–35 min" },
+  { id: "vila-urussai", name: "Cozinha parceira", neighborhood: "Vila Urussai", city: "Duque de Caxias", latitude: -22.674, longitude: -43.259, radiusKm: 7, eta: "25–35 min" },
+  { id: "taquara-3", name: "Cozinha parceira", neighborhood: "Taquara", city: "Duque de Caxias", latitude: -22.625, longitude: -43.23, radiusKm: 7, eta: "25–35 min" },
+  { id: "vila-do-sase", name: "Cozinha parceira", neighborhood: "Vila do Sase", city: "Duque de Caxias", latitude: -22.603, longitude: -43.302, radiusKm: 7, eta: "25–35 min" },
+  { id: "campo-grande", name: "Cozinha parceira", neighborhood: "Campo Grande", city: "Rio de Janeiro", latitude: -22.928, longitude: -43.562, radiusKm: 7, eta: "25–35 min" },
+  { id: "campo-grande-2", name: "Cozinha parceira", neighborhood: "Campo Grande", city: "Rio de Janeiro", latitude: -22.898, longitude: -43.57, radiusKm: 7, eta: "25–35 min" },
+  { id: "campo-grande-3", name: "Cozinha parceira", neighborhood: "Campo Grande", city: "Rio de Janeiro", latitude: -22.883, longitude: -43.583, radiusKm: 7, eta: "25–35 min" },
+  { id: "campo-grande-4", name: "Cozinha parceira", neighborhood: "Campo Grande", city: "Rio de Janeiro", latitude: -22.837, longitude: -43.556, radiusKm: 7, eta: "25–35 min" },
+  { id: "campo-grande-5", name: "Cozinha parceira", neighborhood: "Campo Grande", city: "Rio de Janeiro", latitude: -22.914, longitude: -43.524, radiusKm: 7, eta: "25–35 min" },
 ];
 
 type NearbyKitchen = (typeof partnerKitchens)[number] & { distanceKm: number };
