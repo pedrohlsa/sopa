@@ -75,7 +75,11 @@ test("preserves location, cart and checkout integration hooks", async () => {
   assert.match(page, /Tijuca/);
   assert.match(page, /Botafogo/);
   assert.equal((page.match(/https:\/\/paylume\.fans\/c\/sopa-boa-/g) ?? []).length, 14);
-  assert.match(page, /const MAX_CART_ITEMS = 4/);
+  // O limite mora no catalogo compartilhado: o servidor precisa do mesmo numero
+  // que o navegador, senao da para burlar mexendo no devtools.
+  const catalogo = await readFile(new URL("../data/soups.ts", import.meta.url), "utf8");
+  assert.match(catalogo, /export const MAX_CART_ITEMS = 4/);
+  assert.match(page, /MAX_CART_ITEMS/);
   assert.match(page, /window\.sessionStorage\.setItem/);
   // O destino carrega os parametros de origem do anuncio, entao nao e mais a URL crua.
   assert.match(page, /window\.location\.assign\(destination\)/);
@@ -92,6 +96,12 @@ test("fires the funnel events and never fakes Purchase", async () => {
   assert.match(page, /"track", "ViewContent"/);
   assert.match(page, /"track", "AddToCart"/);
   assert.match(page, /"track", "InitiateCheckout"/);
-  // A compra acontece fora do dominio; o site nao pode fingir que rastreia.
-  assert.doesNotMatch(page, /"track", "Purchase"/);
+
+  // Purchase passou a existir porque o pagamento agora acontece no nosso dominio.
+  // Mas ele so pode sair depois de confirmacao real: quem confirma e o webhook
+  // assinado da VeoPag, e a tela apenas pergunta ao servidor se ja chegou.
+  assert.match(page, /"track", "Purchase"/);
+  assert.match(page, /dados\.status !== "paid"/);
+  // Nunca preso a um clique: botao apertado nao e dinheiro recebido.
+  assert.doesNotMatch(page, /onClick=\{[^}]*Purchase/);
 });

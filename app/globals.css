@@ -398,3 +398,89 @@ footer small { color: var(--muted); display: block; font-size: 12px; margin-top:
   html { scroll-behavior: auto; }
   * { animation: none !important; transition: none !important; }
 }
+
+/* ---------- acompanhamentos no carrinho ---------- */
+.add-button.small { font-size: 13px; min-height: 40px; padding: 9px 14px; }
+.extras li .quantity-control { flex-shrink: 0; }
+.cart-extras { display: grid; gap: 6px; list-style: none; margin: 12px 0 0; padding: 0; }
+.cart-extras li { align-items: center; color: var(--muted); display: flex; font-size: 13.5px; justify-content: space-between; }
+.cart-extras b { color: var(--ink); }
+.cart-extras-acoes { align-items: center; display: flex; gap: 8px; }
+.cart-extras-acoes button {
+  background: #f2e7d6; border: 0; border-radius: 50%; font-size: 15px; height: 32px; width: 32px;
+}
+
+/* ---------- passo de dados ---------- */
+.dados-step { display: flex; flex-direction: column; }
+.dados-grid { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+.dados-grid label { display: flex; flex-direction: column; font-size: 12.5px; font-weight: 700; gap: 5px; }
+.dados-grid .wide-field { grid-column: 1 / -1; }
+.dados-grid .number-field { max-width: 100%; }
+.dados-grid input {
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: 11px;
+  font-size: 16px; /* menos de 16px faz o iOS dar zoom sozinho no foco */
+  font-weight: 500;
+  min-height: 48px;
+  padding: 11px 12px;
+  width: 100%;
+}
+.dados-grid input:focus { border-color: var(--orange); outline: none; }
+.dados-dica { color: var(--muted); font-size: 12.5px; margin-top: 10px; }
+.dados-erro { color: var(--orange-dark); font-size: 13.5px; font-weight: 650; margin-top: 10px; }
+.dados-step .pay-button:disabled { opacity: 0.65; }
+.dados-step .link-button { margin-top: 4px; }
+
+/* ---------- passo do Pix ---------- */
+.pix-step { display: flex; flex-direction: column; text-align: center; }
+.pix-instrucao { color: var(--muted); font-size: 14px; line-height: 1.45; }
+.pix-qr {
+  align-self: center;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  height: 240px;
+  margin: 16px 0;
+  padding: 10px;
+  width: 240px;
+}
+.pix-qr.placeholder { background: #f2e7d6; }
+.pix-valor { font-size: 15px; margin-top: 14px; }
+.pix-valor strong { font-size: 19px; }
+.pix-confirmado { display: grid; gap: 12px; padding: 14px 0; }
+.pix-confirmado strong { font-size: 20px; }
+.pix-confirmado p { color: var(--muted); font-size: 14.5px; line-height: 1.45; }
+
+/* ---------- painel de pedidos ---------- */
+.admin, .admin-login { margin: 0 auto; max-width: 620px; padding: 20px 18px 60px; }
+.admin-login form { display: grid; gap: 12px; margin-top: 18px; }
+.admin-login label { display: flex; flex-direction: column; font-size: 13px; font-weight: 700; gap: 6px; }
+.admin-login input {
+  background: var(--paper); border: 1.5px solid var(--line); border-radius: 11px;
+  font-size: 16px; min-height: 48px; padding: 11px 12px;
+}
+.admin-header { align-items: center; display: flex; justify-content: space-between; margin-bottom: 16px; }
+.admin-actions { display: flex; gap: 12px; }
+.admin-erro { color: var(--orange-dark); font-size: 14px; font-weight: 650; }
+.admin-vazio { color: var(--muted); padding: 26px 0; text-align: center; }
+.admin-lista { display: grid; gap: 12px; list-style: none; margin: 0; padding: 0; }
+.admin-pedido {
+  background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--line);
+  border-radius: 14px; padding: 13px;
+}
+.admin-pedido.paid { border-left-color: #2e7d4f; }
+.admin-pedido.failed { border-left-color: #b3261e; opacity: 0.6; }
+.admin-topo { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
+.admin-topo strong { font-size: 19px; }
+.admin-status { border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; padding: 4px 9px; }
+.admin-status.paid { background: #dcefe3; color: #1d5c39; }
+.admin-status.pending { background: #f6ecdc; color: var(--muted); }
+.admin-status.failed { background: #f6dcda; color: #8c1d18; }
+.admin-topo small { color: var(--muted); font-size: 12.5px; margin-left: auto; }
+.admin-itens { display: grid; gap: 3px; list-style: none; margin: 10px 0; padding: 0; }
+.admin-itens li { font-size: 14.5px; }
+.admin-cliente { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
+.admin-cliente a { color: var(--orange-dark); font-weight: 700; text-decoration: underline; }
+.admin-pedido address { color: var(--muted); font-size: 13.5px; font-style: normal; line-height: 1.45; margin-top: 8px; }
+.admin-obs { background: #f6ecdc; border-radius: 10px; font-size: 13px; margin-top: 8px; padding: 8px 10px; }

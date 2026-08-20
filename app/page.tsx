@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { extras, findExtra, MAX_CART_ITEMS, MAX_EXTRA_QUANTITY, soups } from "../data/soups";
 
 const META_PIXEL_ID = "1050963361185572";
 const META_CONSENT_KEY = "sopa-meta-consent";
@@ -21,7 +22,6 @@ declare global {
   }
 }
 
-const MAX_CART_ITEMS = 4;
 const MAX_KITCHEN_RESULTS = 1;
 
 const OPENING_HOURS = "Todos os dias, das 18h à meia-noite";
@@ -49,92 +49,9 @@ const CHECKOUT_URLS: Record<string, string> = {
 // repassá-los, o clique chega ao checkout sem origem.
 const FORWARDED_PARAMS = ["fbclid", "gclid", "ttclid", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
 
-const EXTRAS = [
-  { icon: "🥤", name: "Refrigerante lata", detail: "Coca-Cola ou Guaraná, 350 ml", price: "R$ 7,99" },
-  { icon: "🥤", name: "Refrigerante 2 L", detail: "Coca-Cola ou Guaraná", price: "R$ 14,99" },
-  { icon: "🥖", name: "2 pães franceses", detail: "Fresquinhos, para acompanhar", price: "R$ 2,99" },
-];
 
-const soups = [
-  {
-    id: "caldo-verde-calabresa",
-    name: "Caldo Verde com Calabresa",
-    description: "Batata cremosa, couve fresquinha e calabresa dourada por cima.",
-    price: "R$ 19,90",
-    priceValue: 19.9,
-    size: "500 ml",
-    badge: "Clássico",
-    image: "/sopas/caldo-verde-com-calabresa.jpg",
-    imageAlt: "Caldo verde cremoso com couve e rodelas de calabresa",
-    featured: true,
-    checkoutTier: "traditional",
-  },
-  {
-    id: "feijao-bacon-calabresa",
-    name: "Caldo de Feijão com Bacon e Calabresa",
-    description: "Feijão bem temperado, bacon crocante e calabresa. Encorpado.",
-    price: "R$ 19,90",
-    priceValue: 19.9,
-    size: "500 ml",
-    badge: "",
-    image: "/sopas/caldo-de-feijao-com-bacon-e-calabresa.jpg",
-    imageAlt: "Caldo de feijão cremoso com bacon e rodelas de calabresa",
-    featured: false,
-    checkoutTier: "traditional",
-  },
-  {
-    id: "ervilha-bacon-calabresa",
-    name: "Creme de Ervilha com Bacon e Calabresa",
-    description: "Ervilha cremosa com bacon e calabresa dourada. Bem servido.",
-    price: "R$ 19,90",
-    priceValue: 19.9,
-    size: "500 ml",
-    badge: "",
-    image: "/sopas/creme-de-ervilha-com-bacon-e-calabresa.jpg",
-    imageAlt: "Creme de ervilha com bacon e calabresa",
-    featured: false,
-    checkoutTier: "traditional",
-  },
-  {
-    id: "frango-legumes",
-    name: "Sopa de Frango com Legumes",
-    description: "Frango desfiado, cenoura, batata e cheiro-verde. Leve e caseira.",
-    price: "R$ 19,90",
-    priceValue: 19.9,
-    size: "500 ml",
-    badge: "",
-    image: "/sopas/sopa-de-frango-com-legumes.jpg",
-    imageAlt: "Sopa de frango com legumes em pedaços",
-    featured: false,
-    checkoutTier: "traditional",
-  },
-  {
-    id: "aipim-carne-seca",
-    name: "Caldo de Aipim com Carne-Seca",
-    description: "Aipim batido até ficar aveludado, com carne-seca desfiada.",
-    price: "R$ 23,90",
-    priceValue: 23.9,
-    size: "500 ml",
-    badge: "",
-    image: "/sopas/caldo-de-aipim-com-carne-seca.jpg",
-    imageAlt: "Caldo de aipim cremoso com carne-seca desfiada",
-    featured: false,
-    checkoutTier: "special",
-  },
-  {
-    id: "abobora-carne-seca",
-    name: "Creme de Abóbora com Carne-Seca",
-    description: "Abóbora cremosa e levemente adocicada com carne-seca por cima.",
-    price: "R$ 23,90",
-    priceValue: 23.9,
-    size: "500 ml",
-    badge: "",
-    image: "/sopas/creme-de-abobora-com-carne-seca.jpg",
-    imageAlt: "Creme de abóbora com carne-seca desfiada",
-    featured: false,
-    checkoutTier: "special",
-  },
-];
+
+
 
 const partnerKitchens = [
   { id: "bento-ribeiro", name: "Cozinha parceira", neighborhood: "Bento Ribeiro", city: "Rio de Janeiro", latitude: -22.867, longitude: -43.361, radiusKm: 7, eta: "25–35 min" },
@@ -269,6 +186,26 @@ export default function Page() {
   const [cart, setCart] = useState<string[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [areaOpen, setAreaOpen] = useState(false);
+  const [extrasCart, setExtrasCart] = useState<Record<string, number>>({});
+  const [checkoutStep, setCheckoutStep] = useState<"cart" | "dados" | "pix">("cart");
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    document: "",
+    cep: "",
+    street: "",
+    number: "",
+    neighborhood: "",
+    complement: "",
+  });
+  const [cepStatus, setCepStatus] = useState("");
+  const [formError, setFormError] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [pixCode, setPixCode] = useState("");
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [copiado, setCopiado] = useState(false);
+  const [orderId, setOrderId] = useState("");
+  const [pagamentoConfirmado, setPagamentoConfirmado] = useState(false);
   const menuRef = useRef<HTMLElement | null>(null);
   const viewContentSent = useRef(false);
 
@@ -277,8 +214,24 @@ export default function Page() {
     .filter((item) => item.quantity > 0);
   const traditionalCount = cart.filter((id) => soups.find((soup) => soup.id === id)?.checkoutTier === "traditional").length;
   const specialCount = cart.length - traditionalCount;
-  const cartTotal = traditionalCount * 19.9 + specialCount * 23.9;
+  const soupsTotal = traditionalCount * 19.9 + specialCount * 23.9;
+  const extrasTotal = Object.entries(extrasCart).reduce(
+    (sum, [id, quantity]) => sum + (findExtra(id)?.priceValue ?? 0) * quantity,
+    0,
+  );
+  const cartTotal = Math.round((soupsTotal + extrasTotal) * 100) / 100;
+  const extrasCount = Object.values(extrasCart).reduce((sum, quantity) => sum + quantity, 0);
   const selectedCheckoutUrl = CHECKOUT_URLS[`${traditionalCount}-${specialCount}`];
+
+  function ajustarExtra(id: string, delta: number) {
+    setExtrasCart((current) => {
+      const proxima = Math.min(MAX_EXTRA_QUANTITY, Math.max(0, (current[id] ?? 0) + delta));
+      const copia = { ...current };
+      if (proxima === 0) delete copia[id];
+      else copia[id] = proxima;
+      return copia;
+    });
+  }
 
   useEffect(() => {
     const savedConsent = window.localStorage.getItem(META_CONSENT_KEY);
@@ -303,6 +256,40 @@ export default function Page() {
   useEffect(() => {
     window.sessionStorage.setItem(CART_KEY, JSON.stringify(cart));
   }, [cart]);
+
+  // Quem pagou fica olhando esta tela esperando alguma reação. Quem confirma o
+  // pagamento é o webhook da VeoPag; aqui só perguntamos se ele já chegou.
+  useEffect(() => {
+    if (checkoutStep !== "pix" || !orderId || pagamentoConfirmado) return;
+
+    let ativo = true;
+    const consultar = async () => {
+      try {
+        const resposta = await fetch(`/api/pedidos/${orderId}`, { cache: "no-store" });
+        if (!resposta.ok) return;
+        const dados = (await resposta.json()) as { status?: string };
+        if (!ativo || dados.status !== "paid") return;
+
+        setPagamentoConfirmado(true);
+        window.fbq?.("track", "Purchase", {
+          content_ids: cart,
+          content_type: "product",
+          currency: "BRL",
+          num_items: cart.length,
+          value: cartTotal,
+        });
+      } catch {
+        /* rede instável: a próxima tentativa resolve */
+      }
+    };
+
+    consultar();
+    const timer = window.setInterval(consultar, 4000);
+    return () => {
+      ativo = false;
+      window.clearInterval(timer);
+    };
+  }, [checkoutStep, orderId, pagamentoConfirmado, cart, cartTotal]);
 
   useEffect(() => {
     if (trackingConsent !== "accepted") return;
@@ -466,6 +453,126 @@ export default function Page() {
     setTrackingConsent(consent);
   }
 
+  function setFormField(field: keyof typeof form, value: string) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  // ViaCEP é público e sem chave. Preencher rua e bairro sozinho tira dois
+  // campos de digitação de quem está com fome, no celular, à noite.
+  async function aoDigitarCep(value: string) {
+    setFormField("cep", value);
+    const digits = value.replace(/\D/g, "");
+    if (digits.length !== 8) {
+      setCepStatus("");
+      return;
+    }
+
+    setCepStatus("Buscando endereço…");
+    try {
+      const resposta = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+      const dados = (await resposta.json()) as { logradouro?: string; bairro?: string; erro?: boolean };
+      if (dados.erro) {
+        setCepStatus("CEP não encontrado. Preencha rua e bairro à mão.");
+        return;
+      }
+      setForm((current) => ({
+        ...current,
+        street: dados.logradouro || current.street,
+        neighborhood: dados.bairro || current.neighborhood,
+      }));
+      setCepStatus("");
+    } catch {
+      setCepStatus("Não consegui buscar o CEP. Preencha rua e bairro à mão.");
+    }
+  }
+
+  function trackingAtual() {
+    const params = new URLSearchParams(window.location.search);
+    const dados: Record<string, string> = {};
+    for (const key of FORWARDED_PARAMS) {
+      const value = params.get(key);
+      if (value) dados[key] = value;
+    }
+    const fbp = document.cookie.match(/_fbp=([^;]+)/)?.[1];
+    if (fbp) dados.fbp = fbp;
+    return dados;
+  }
+
+  async function enviarPedido(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (enviando) return;
+    setEnviando(true);
+    setFormError("");
+
+    try {
+      const resposta = await fetch("/api/pedidos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: cart,
+          extras: extrasCart,
+          customer: { name: form.name, phone: form.phone, document: form.document },
+          address: {
+            cep: form.cep,
+            street: form.street,
+            number: form.number,
+            neighborhood: form.neighborhood,
+            complement: form.complement,
+          },
+          tracking: trackingAtual(),
+        }),
+      });
+
+      const dados = (await resposta.json()) as { orderId?: string; qrcode?: string; error?: string };
+      if (!resposta.ok || !dados.qrcode || !dados.orderId) {
+        setFormError(dados.error ?? "Não consegui gerar o Pix. Tente de novo.");
+        return;
+      }
+
+      window.fbq?.("track", "InitiateCheckout", {
+        content_ids: cart,
+        content_type: "product",
+        currency: "BRL",
+        num_items: cart.length,
+        value: cartTotal,
+      });
+
+      setPixCode(dados.qrcode);
+      setOrderId(dados.orderId);
+      setCheckoutStep("pix");
+
+      // Carregado só aqui: quem não chega a pagar não baixa a biblioteca do QR.
+      const { toDataURL } = await import("qrcode");
+      setQrDataUrl(await toDataURL(dados.qrcode, { margin: 1, width: 480 }));
+    } catch {
+      setFormError("Sem conexão. Confira a internet e tente de novo.");
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  async function copiarCodigo() {
+    try {
+      await navigator.clipboard.writeText(pixCode);
+      setCopiado(true);
+      window.setTimeout(() => setCopiado(false), 2500);
+    } catch {
+      showNotice("Não consegui copiar. Segure o código para selecionar.");
+    }
+  }
+
+  function fecharPedido() {
+    setCartOpen(false);
+    if (pagamentoConfirmado) {
+      setCart([]);
+      setCheckoutStep("cart");
+      setPagamentoConfirmado(false);
+      setPixCode("");
+      setQrDataUrl("");
+      setOrderId("");
+    }
+  }
+
   function goToMenu() {
     document.querySelector("#cardapio")?.scrollIntoView({ behavior: "smooth" });
   }
@@ -546,18 +653,45 @@ export default function Page() {
         <div className="extras">
           <h3>Complete seu pedido</h3>
           <ul>
-            {EXTRAS.map((extra) => (
-              <li key={extra.name}>
+            {extras.map((extra) => (
+              <li key={extra.id}>
                 <span aria-hidden="true">{extra.icon}</span>
                 <div>
                   <strong>{extra.name}</strong>
                   <small>{extra.detail}</small>
                 </div>
                 <b>{extra.price}</b>
+                {extrasCart[extra.id] ? (
+                  <div className="quantity-control">
+                    <button
+                      type="button"
+                      onClick={() => ajustarExtra(extra.id, -1)}
+                      aria-label={`Remover um ${extra.name}`}
+                    >
+                      −
+                    </button>
+                    <span>{extrasCart[extra.id]}</span>
+                    <button
+                      type="button"
+                      onClick={() => ajustarExtra(extra.id, 1)}
+                      aria-label={`Adicionar outro ${extra.name}`}
+                    >
+                      ＋
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className="add-button small"
+                    type="button"
+                    onClick={() => ajustarExtra(extra.id, 1)}
+                    aria-label={`Adicionar ${extra.name} por ${extra.price}`}
+                  >
+                    Adicionar
+                  </button>
+                )}
               </li>
             ))}
           </ul>
-          <small className="extras-note">Você adiciona os acompanhamentos na tela de pagamento.</small>
         </div>
       </section>
 
@@ -590,8 +724,12 @@ export default function Page() {
           )}
           {locationStatus === "outside" && (
             <div className="area-result">
-              <strong>Ainda não chegamos aí</strong>
-              <p>Estamos abrindo cozinhas novas toda semana. Volte para conferir em breve.</p>
+              <strong>Você está fora do raio das nossas cozinhas</strong>
+              <p>
+                Ainda assim dá para pedir. A entrega vai levar <strong>mais do que {DELIVERY_ETA}</strong>,
+                e a gente combina o horário com você pelo WhatsApp depois do pedido.
+              </p>
+              <button className="primary-button small" onClick={goToMenu}>Pedir mesmo assim</button>
             </div>
           )}
           {locationStatus === "denied" && (
@@ -664,7 +802,8 @@ export default function Page() {
       {cart.length > 0 && !cartOpen && (
         <button className="cart-bar" onClick={() => setCartOpen(true)}>
           <span>
-            {cart.length} {cart.length === 1 ? "item" : "itens"} · {formatBRL(cartTotal)}
+            {cart.length + extrasCount} {cart.length + extrasCount === 1 ? "item" : "itens"} ·{" "}
+            {formatBRL(cartTotal)}
           </span>
           <b>Ver pedido →</b>
         </button>
@@ -675,11 +814,135 @@ export default function Page() {
           <button className="cart-backdrop" aria-label="Fechar pedido" onClick={() => setCartOpen(false)} />
           <aside className="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title">
             <div className="cart-header">
-              <h2 id="cart-title">Seu pedido</h2>
-              <button className="cart-close" onClick={() => setCartOpen(false)} aria-label="Fechar">×</button>
+              <h2 id="cart-title">
+                {checkoutStep === "pix" ? "Pague com Pix" : checkoutStep === "dados" ? "Entrega" : "Seu pedido"}
+              </h2>
+              <button className="cart-close" onClick={fecharPedido} aria-label="Fechar">×</button>
             </div>
 
-            {cart.length === 0 ? (
+            {checkoutStep === "pix" ? (
+              <div className="pix-step">
+                {pagamentoConfirmado ? (
+                  <div className="pix-confirmado">
+                    <strong>Pagamento confirmado 🎉</strong>
+                    <p>
+                      Já estamos preparando seu pedido. A entrega chega em {DELIVERY_ETA}. Se
+                      precisarmos confirmar algo, chamamos no WhatsApp.
+                    </p>
+                    <button className="primary-button" onClick={fecharPedido}>Fechar</button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="pix-instrucao">
+                      Abra o app do banco, escolha Pix e escaneie o código. A confirmação aparece
+                      aqui automaticamente.
+                    </p>
+                    {qrDataUrl ? (
+                      <img className="pix-qr" src={qrDataUrl} alt="QR Code do Pix" width={240} height={240} />
+                    ) : (
+                      <div className="pix-qr placeholder" aria-hidden="true" />
+                    )}
+                    <button className="ghost-button" onClick={copiarCodigo}>
+                      {copiado ? "Código copiado ✓" : "Copiar código Pix"}
+                    </button>
+                    <p className="pix-valor">
+                      Valor: <strong>{formatBRL(cartTotal)}</strong>
+                    </p>
+                    <small className="pay-helper">Aguardando o pagamento…</small>
+                  </>
+                )}
+              </div>
+            ) : checkoutStep === "dados" ? (
+              <form className="dados-step" onSubmit={enviarPedido}>
+                <div className="dados-grid">
+                  <label className="wide-field">
+                    Nome de quem recebe
+                    <input
+                      required
+                      autoComplete="name"
+                      value={form.name}
+                      onChange={(e) => setFormField("name", e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    WhatsApp
+                    <input
+                      required
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      placeholder="21999998888"
+                      value={form.phone}
+                      onChange={(e) => setFormField("phone", e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    CPF
+                    <input
+                      required
+                      inputMode="numeric"
+                      placeholder="000.000.000-00"
+                      value={form.document}
+                      onChange={(e) => setFormField("document", e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    CEP
+                    <input
+                      required
+                      inputMode="numeric"
+                      autoComplete="postal-code"
+                      placeholder="00000-000"
+                      value={form.cep}
+                      onChange={(e) => aoDigitarCep(e.target.value)}
+                    />
+                  </label>
+                  <label className="number-field">
+                    Número
+                    <input
+                      required
+                      inputMode="numeric"
+                      value={form.number}
+                      onChange={(e) => setFormField("number", e.target.value)}
+                    />
+                  </label>
+                  <label className="wide-field">
+                    Rua
+                    <input
+                      required
+                      autoComplete="address-line1"
+                      value={form.street}
+                      onChange={(e) => setFormField("street", e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Bairro
+                    <input
+                      required
+                      value={form.neighborhood}
+                      onChange={(e) => setFormField("neighborhood", e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Complemento
+                    <input
+                      value={form.complement}
+                      onChange={(e) => setFormField("complement", e.target.value)}
+                      placeholder="Apto, bloco…"
+                    />
+                  </label>
+                </div>
+
+                {cepStatus ? <small className="dados-dica">{cepStatus}</small> : null}
+                {formError ? <p className="dados-erro">{formError}</p> : null}
+
+                <button className="pay-button" type="submit" disabled={enviando}>
+                  {enviando ? "Gerando Pix…" : `Gerar Pix · ${formatBRL(cartTotal)}`}
+                </button>
+                <button className="link-button" type="button" onClick={() => setCheckoutStep("cart")}>
+                  Voltar ao pedido
+                </button>
+              </form>
+            ) : cart.length === 0 ? (
               <div className="empty-cart">
                 <strong>Nada por aqui ainda</strong>
                 <button className="primary-button" onClick={() => setCartOpen(false)}>Ver o cardápio</button>
@@ -719,11 +982,39 @@ export default function Page() {
                   {cart.length >= MAX_CART_ITEMS ? "Máximo de 4 sopas" : "+ Adicionar outro sabor"}
                 </button>
 
+                {extrasCount > 0 && (
+                  <ul className="cart-extras">
+                    {Object.entries(extrasCart).map(([id, quantity]) => {
+                      const extra = findExtra(id);
+                      if (!extra) return null;
+                      return (
+                        <li key={id}>
+                          <span>
+                            <b>{quantity}×</b> {extra.name}
+                          </span>
+                          <span className="cart-extras-acoes">
+                            {formatBRL(extra.priceValue * quantity)}
+                            <button type="button" onClick={() => ajustarExtra(id, -1)} aria-label={`Remover um ${extra.name}`}>
+                              −
+                            </button>
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
                 <div className="cart-summary">
                   <div className="summary-row">
                     <span>{cart.length} {cart.length === 1 ? "sopa" : "sopas"} de 500 ml</span>
-                    <span>{formatBRL(cartTotal)}</span>
+                    <span>{formatBRL(soupsTotal)}</span>
                   </div>
+                  {extrasCount > 0 && (
+                    <div className="summary-row">
+                      <span>{extrasCount} {extrasCount === 1 ? "acompanhamento" : "acompanhamentos"}</span>
+                      <span>{formatBRL(extrasTotal)}</span>
+                    </div>
+                  )}
                   <div className="summary-row muted">
                     <span>Entrega</span>
                     <span>{DELIVERY_ETA}</span>
@@ -734,15 +1025,11 @@ export default function Page() {
                   </div>
                 </div>
 
-                <p className="cart-next">
-                  Na próxima tela você paga no Pix e pode adicionar refrigerante ou pães.
-                  Depois do pagamento confirmamos o endereço da entrega pelo WhatsApp.
-                </p>
+                <p className="cart-next">Pagamento no Pix, com confirmação na hora.</p>
 
-                <button className="pay-button" type="button" onClick={continueToPayment}>
-                  Ir para o pagamento · {formatBRL(cartTotal)}
+                <button className="pay-button" type="button" onClick={() => setCheckoutStep("dados")}>
+                  Continuar · {formatBRL(cartTotal)}
                 </button>
-                <small className="pay-helper">Pagamento no Pix processado pela SharkBot.</small>
               </>
             )}
           </aside>
