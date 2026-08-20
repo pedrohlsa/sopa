@@ -464,6 +464,73 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="menu-section" id="cardapio">
+        <div className="section-heading">
+          <div>
+            <div className="menu-kickers">
+              <span className="kicker">Cardápio</span>
+              <span className="launch-label">Preços de lançamento</span>
+            </div>
+            <h2>Qual vai aquecer seu dia?</h2>
+          </div>
+          <p>Caldos de 500 ml, preparados no dia e enviados bem quentinhos. A partir de R$ 19,90.</p>
+        </div>
+
+        <div className="menu-grid">
+          {soups.map((soup) => (
+            <article className={`menu-card${soup.featured ? " featured" : ""}`} key={soup.id}>
+              <div className="menu-visual" role="img" aria-label={soup.imageAlt}>
+                <span className="soup-photo" style={{ backgroundImage: `url(${soup.image})` }} aria-hidden="true" />
+              </div>
+              <div className="menu-content">
+                <div className="menu-meta">
+                  <span className={`menu-badge${soup.featured ? " popular" : ""}`}>{soup.category}</span>
+                  <span className="menu-size">{soup.size}</span>
+                </div>
+                <h3>{soup.name}</h3>
+                <p>{soup.description}</p>
+                <div className="menu-card-footer">
+                  <div className="menu-price">
+                    <small>Preço de lançamento</small>
+                    <strong>{soup.price}</strong>
+                  </div>
+                  <button
+                    onClick={() => {
+                      window.fbq?.("track", "ViewContent", {
+                        content_ids: [soup.id],
+                        content_name: soup.name,
+                        content_type: "product",
+                        currency: "BRL",
+                        value: soup.checkoutTier === "traditional" ? 19.9 : 23.9,
+                      });
+                      addToCart(soup.id);
+                    }}
+                    aria-label={`Adicionar ${soup.name}, ${soup.size}, por ${soup.price}`}
+                  >
+                    Adicionar <span aria-hidden="true">＋</span>
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="drink-strip" aria-label="Bebidas disponíveis no checkout">
+          <div className="drink-strip-heading">
+            <span aria-hidden="true">🥤</span>
+            <div>
+              <strong>REFRIGERANTES — ESCOLHA NO CHECKOUT</strong>
+              <small>Estas opções não são botões. Adicione a bebida depois de clicar em “Ir para o checkout”.</small>
+            </div>
+          </div>
+          <div className="drink-options">
+            <span><strong>Coca-Cola ou Guaraná • lata</strong><small>NO CHECKOUT • R$ 7,99</small></span>
+            <span><strong>Coca-Cola ou Guaraná • 2 L</strong><small>NO CHECKOUT • R$ 14,99</small></span>
+            <span><strong>2 pães franceses</strong><small>NO CHECKOUT • R$ 2,99</small></span>
+          </div>
+        </div>
+        <p className="menu-note">Sabores sujeitos à disponibilidade da cozinha que atende sua região.</p>
+      </section>
+
       <section className="locator-section" id="perto-de-voce">
         <div className="locator-copy">
           <span className="kicker light">Perto de você</span>
@@ -542,73 +609,6 @@ export default function Home() {
             </div>
           )}
         </div>
-      </section>
-
-      <section className="menu-section" id="cardapio">
-        <div className="section-heading">
-          <div>
-            <div className="menu-kickers">
-              <span className="kicker">Cardápio</span>
-              <span className="launch-label">Preços de lançamento</span>
-            </div>
-            <h2>Qual vai aquecer seu dia?</h2>
-          </div>
-          <p>Caldos de 500 ml, preparados no dia e enviados bem quentinhos. A partir de R$ 19,90.</p>
-        </div>
-
-        <div className="menu-grid">
-          {soups.map((soup) => (
-            <article className={`menu-card${soup.featured ? " featured" : ""}`} key={soup.id}>
-              <div className="menu-visual" role="img" aria-label={soup.imageAlt}>
-                <span className="soup-photo" style={{ backgroundImage: `url(${soup.image})` }} aria-hidden="true" />
-              </div>
-              <div className="menu-content">
-                <div className="menu-meta">
-                  <span className={`menu-badge${soup.featured ? " popular" : ""}`}>{soup.category}</span>
-                  <span className="menu-size">{soup.size}</span>
-                </div>
-                <h3>{soup.name}</h3>
-                <p>{soup.description}</p>
-                <div className="menu-card-footer">
-                  <div className="menu-price">
-                    <small>Preço de lançamento</small>
-                    <strong>{soup.price}</strong>
-                  </div>
-                  <button
-                    onClick={() => {
-                      window.fbq?.("track", "ViewContent", {
-                        content_ids: [soup.id],
-                        content_name: soup.name,
-                        content_type: "product",
-                        currency: "BRL",
-                        value: soup.checkoutTier === "traditional" ? 19.9 : 23.9,
-                      });
-                      addToCart(soup.id);
-                    }}
-                    aria-label={`Adicionar ${soup.name}, ${soup.size}, por ${soup.price}`}
-                  >
-                    Adicionar <span aria-hidden="true">＋</span>
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-        <div className="drink-strip" aria-label="Bebidas disponíveis no checkout">
-          <div className="drink-strip-heading">
-            <span aria-hidden="true">🥤</span>
-            <div>
-              <strong>REFRIGERANTES — ESCOLHA NO CHECKOUT</strong>
-              <small>Estas opções não são botões. Adicione a bebida depois de clicar em “Ir para o checkout”.</small>
-            </div>
-          </div>
-          <div className="drink-options">
-            <span><strong>Coca-Cola ou Guaraná • lata</strong><small>NO CHECKOUT • R$ 7,99</small></span>
-            <span><strong>Coca-Cola ou Guaraná • 2 L</strong><small>NO CHECKOUT • R$ 14,99</small></span>
-            <span><strong>2 pães franceses</strong><small>NO CHECKOUT • R$ 2,99</small></span>
-          </div>
-        </div>
-        <p className="menu-note">Sabores sujeitos à disponibilidade da cozinha que atende sua região.</p>
       </section>
 
       <section className="steps-section" id="como-funciona">

@@ -338,13 +338,13 @@ footer small, footer p { font-size: 12px; }
   .brand { font-size: 18px; }
   .brand-mark { height: 34px; width: 34px; }
   .nav-cta { display: none; }
-  .hero { gap: 0; min-height: auto; padding: 47px 20px 64px; }
-  h1 { font-size: clamp(43px, 13.4vw, 51px); }
+  .hero { gap: 0; min-height: auto; padding: 28px 20px 24px; }
+  h1 { font-size: clamp(33px, 9.6vw, 39px); }
   .hero-text { font-size: 16px; }
   .hero-actions { align-items: stretch; flex-direction: column; gap: 20px; }
   .text-link { align-self: center; }
-  .hero-trust { align-items: flex-start; flex-direction: column; gap: 10px; }
-  .hero-art { height: 365px; margin-top: 20px; }
+  .hero-trust { align-items: center; flex-direction: row; flex-wrap: wrap; gap: 8px 14px; font-size: 12px; }
+  .hero-art { display: none; }
   .sun { height: 285px; width: 285px; }
   .bowl { bottom: 60px; height: 130px; width: 275px; }
   .soup { height: 70px; width: 277px; }
@@ -380,7 +380,11 @@ footer small, footer p { font-size: 12px; }
   .wide-field, .street-field { grid-column: auto; }
   .number-field { max-width: none; }
   .toast { bottom: 82px; font-size: 13px; width: calc(100% - 40px); }
-  .cookie-banner { align-items: stretch; bottom: 12px; flex-direction: column; gap: 14px; padding: 17px; width: calc(100% - 24px); }
+  .cookie-banner { align-items: center; bottom: 10px; flex-direction: row; flex-wrap: wrap; gap: 8px 10px; padding: 10px 12px; width: calc(100% - 20px); }
+  .cookie-banner p { display: none; }
+  .cookie-banner strong { font-size: 12px; margin-bottom: 0; }
+  .cookie-actions { display: flex; gap: 8px; margin-left: auto; }
+  .cookie-banner button { font-size: 12px; padding: 8px 11px; }
   .cookie-actions { align-items: stretch; flex-direction: column-reverse; }
   .cookie-actions button { width: 100%; }
 }
