@@ -31,9 +31,14 @@ test("server-renders the Sopa Boa commercial catalogue", async () => {
   const html = await response.text();
   assert.match(html, /<html lang="pt-BR">/i);
   assert.match(html, /<title>Sopa Boa \| Sopa delivery perto de você no Rio<\/title>/i);
-  assert.match(html, /Sopa quentinha, pertinho de você\./);
-  assert.match(html, /Caldos de 500 ml/);
-  assert.match(html, /Preços de lançamento/);
+  // A primeira dobra precisa responder o que e, quanto custa e em quanto tempo chega.
+  assert.match(html, /Sopa quentinha chegando na sua casa/);
+  assert.match(html, /Caldos de 500 ml a partir de R\$ 19,90/);
+  assert.match(html, /25 a 35 min/);
+  assert.match(html, /Ver sabores e pedir/);
+  // Linguagem de plataforma nao deve voltar para a primeira dobra.
+  assert.doesNotMatch(html, /ESTAS OPÇÕES NÃO SÃO BOTÕES/i);
+  assert.doesNotMatch(html, /Encontre cozinhas parceiras na sua região/i);
 
   for (const soup of [
     "Caldo Verde com Calabresa",
@@ -72,7 +77,21 @@ test("preserves location, cart and checkout integration hooks", async () => {
   assert.equal((page.match(/https:\/\/paylume\.fans\/c\/sopa-boa-/g) ?? []).length, 14);
   assert.match(page, /const MAX_CART_ITEMS = 4/);
   assert.match(page, /window\.sessionStorage\.setItem/);
-  assert.match(page, /window\.location\.assign\(selectedCheckoutUrl\)/);
+  // O destino carrega os parametros de origem do anuncio, entao nao e mais a URL crua.
+  assert.match(page, /window\.location\.assign\(destination\)/);
+  assert.match(page, /checkoutUrlWithSource/);
+  assert.match(page, /"fbclid"/);
   assert.match(page, /aria-live="polite"/);
   assert.doesNotMatch(page, /google\.maps|maps\.googleapis/i);
+});
+
+test("fires the funnel events and never fakes Purchase", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+
+  assert.match(page, /"track", "PageView"/);
+  assert.match(page, /"track", "ViewContent"/);
+  assert.match(page, /"track", "AddToCart"/);
+  assert.match(page, /"track", "InitiateCheckout"/);
+  // A compra acontece fora do dominio; o site nao pode fingir que rastreia.
+  assert.doesNotMatch(page, /"track", "Purchase"/);
 });

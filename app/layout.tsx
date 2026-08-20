@@ -8,18 +8,18 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 export const metadata: Metadata = {
   metadataBase: new URL("https://pedirsopa.com.br"),
   title: "Sopa Boa | Sopa delivery perto de você no Rio",
-  description: "Encontre cozinhas parceiras e peça caldos de 500 ml a partir de R$ 19,90, com entrega local no Rio e pagamento via Pix.",
+  description: "Caldos de 500 ml a partir de R$ 19,90, entregues quentinhos em 25 a 35 min no Rio e na Baixada. Pagamento no Pix.",
   openGraph: {
-    title: "Sopa Boa | Sopa quentinha, pertinho de você",
-    description: "Caldos de 500 ml a partir de R$ 19,90, preparados por cozinhas parceiras no Rio.",
-    images: [{ url: "/og.png", width: 1729, height: 909, alt: "Sopa Boa — sopa quentinha, pertinho de você" }],
+    title: "Sopa Boa | Sopa quentinha chegando na sua casa",
+    description: "Caldos de 500 ml a partir de R$ 19,90, entrega em 25 a 35 min. Escolha seu sabor e peça pelo Pix.",
+    images: [{ url: "/og.png", width: 1729, height: 909, alt: "Sopa Boa — sopa quentinha chegando na sua casa" }],
     locale: "pt_BR",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sopa Boa | Sopa quentinha, pertinho de você",
-    description: "Caldos de 500 ml a partir de R$ 19,90, preparados por cozinhas parceiras no Rio.",
+    title: "Sopa Boa | Sopa quentinha chegando na sua casa",
+    description: "Caldos de 500 ml a partir de R$ 19,90, entrega em 25 a 35 min. Escolha seu sabor e peça pelo Pix.",
     images: ["/og.png"],
   },
 };

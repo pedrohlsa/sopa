@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const META_PIXEL_ID = "1050963361185572";
 const META_CONSENT_KEY = "sopa-meta-consent";
+const CART_KEY = "sopa-carrinho";
 
 type MetaPixelFunction = ((...args: unknown[]) => void) & {
   callMethod?: (...args: unknown[]) => void;
@@ -23,6 +24,10 @@ declare global {
 const MAX_CART_ITEMS = 4;
 const MAX_KITCHEN_RESULTS = 1;
 
+const OPENING_HOURS = "Todos os dias, das 18h à meia-noite";
+const DELIVERY_ETA = "25 a 35 min";
+const DELIVERY_RANGE = "até 7 km da cozinha mais próxima";
+
 const CHECKOUT_URLS: Record<string, string> = {
   "1-0": "https://paylume.fans/c/sopa-boa-1-tradicional",
   "0-1": "https://paylume.fans/c/sopa-boa-1-especial",
@@ -40,29 +45,96 @@ const CHECKOUT_URLS: Record<string, string> = {
   "0-4": "https://paylume.fans/c/sopa-boa-4-especiais",
 };
 
-type DeliveryDetails = {
-  name: string;
-  whatsapp: string;
-  cep: string;
-  street: string;
-  number: string;
-  complement: string;
-  neighborhood: string;
-  reference: string;
-  notes: string;
-};
+// Parâmetros que a plataforma de anúncios usa para atribuir a venda. Sem
+// repassá-los, o clique chega ao checkout sem origem.
+const FORWARDED_PARAMS = ["fbclid", "gclid", "ttclid", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
 
-const emptyDeliveryDetails: DeliveryDetails = {
-  name: "",
-  whatsapp: "",
-  cep: "",
-  street: "",
-  number: "",
-  complement: "",
-  neighborhood: "",
-  reference: "",
-  notes: "",
-};
+const EXTRAS = [
+  { icon: "🥤", name: "Refrigerante lata", detail: "Coca-Cola ou Guaraná, 350 ml", price: "R$ 7,99" },
+  { icon: "🥤", name: "Refrigerante 2 L", detail: "Coca-Cola ou Guaraná", price: "R$ 14,99" },
+  { icon: "🥖", name: "2 pães franceses", detail: "Fresquinhos, para acompanhar", price: "R$ 2,99" },
+];
+
+const soups = [
+  {
+    id: "caldo-verde-calabresa",
+    name: "Caldo Verde com Calabresa",
+    description: "Batata cremosa, couve fresquinha e calabresa dourada por cima.",
+    price: "R$ 19,90",
+    priceValue: 19.9,
+    size: "500 ml",
+    badge: "Clássico",
+    image: "/sopas/caldo-verde-com-calabresa.jpg",
+    imageAlt: "Caldo verde cremoso com couve e rodelas de calabresa",
+    featured: true,
+    checkoutTier: "traditional",
+  },
+  {
+    id: "feijao-bacon-calabresa",
+    name: "Caldo de Feijão com Bacon e Calabresa",
+    description: "Feijão bem temperado, bacon crocante e calabresa. Encorpado.",
+    price: "R$ 19,90",
+    priceValue: 19.9,
+    size: "500 ml",
+    badge: "",
+    image: "/sopas/caldo-de-feijao-com-bacon-e-calabresa.jpg",
+    imageAlt: "Caldo de feijão cremoso com bacon e rodelas de calabresa",
+    featured: false,
+    checkoutTier: "traditional",
+  },
+  {
+    id: "ervilha-bacon-calabresa",
+    name: "Creme de Ervilha com Bacon e Calabresa",
+    description: "Ervilha cremosa com bacon e calabresa dourada. Bem servido.",
+    price: "R$ 19,90",
+    priceValue: 19.9,
+    size: "500 ml",
+    badge: "",
+    image: "/sopas/creme-de-ervilha-com-bacon-e-calabresa.jpg",
+    imageAlt: "Creme de ervilha com bacon e calabresa",
+    featured: false,
+    checkoutTier: "traditional",
+  },
+  {
+    id: "frango-legumes",
+    name: "Sopa de Frango com Legumes",
+    description: "Frango desfiado, cenoura, batata e cheiro-verde. Leve e caseira.",
+    price: "R$ 19,90",
+    priceValue: 19.9,
+    size: "500 ml",
+    badge: "",
+    image: "/sopas/sopa-de-frango-com-legumes.jpg",
+    imageAlt: "Sopa de frango com legumes em pedaços",
+    featured: false,
+    checkoutTier: "traditional",
+  },
+  {
+    id: "aipim-carne-seca",
+    name: "Caldo de Aipim com Carne-Seca",
+    description: "Aipim batido até ficar aveludado, com carne-seca desfiada.",
+    price: "R$ 23,90",
+    priceValue: 23.9,
+    size: "500 ml",
+    badge: "",
+    image: "/sopas/caldo-de-aipim-com-carne-seca.jpg",
+    imageAlt: "Caldo de aipim cremoso com carne-seca desfiada",
+    featured: false,
+    checkoutTier: "special",
+  },
+  {
+    id: "abobora-carne-seca",
+    name: "Creme de Abóbora com Carne-Seca",
+    description: "Abóbora cremosa e levemente adocicada com carne-seca por cima.",
+    price: "R$ 23,90",
+    priceValue: 23.9,
+    size: "500 ml",
+    badge: "",
+    image: "/sopas/creme-de-abobora-com-carne-seca.jpg",
+    imageAlt: "Creme de abóbora com carne-seca desfiada",
+    featured: false,
+    checkoutTier: "special",
+  },
+];
 
 const partnerKitchens = [
   { id: "bento-ribeiro", name: "Cozinha parceira", neighborhood: "Bento Ribeiro", city: "Rio de Janeiro", latitude: -22.867, longitude: -43.361, radiusKm: 7, eta: "25–35 min" },
@@ -182,89 +254,23 @@ function getDistanceKm(latitude: number, longitude: number, kitchenLatitude: num
   return earthRadiusKm * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
 }
 
-const soups = [
-  {
-    id: "caldo-verde-calabresa",
-    name: "Caldo Verde com Calabresa",
-    description: "Batata cremosa, couve fresquinha e calabresa dourada. O clássico que combina com qualquer noite.",
-    price: "R$ 19,90",
-    size: "500 ml",
-    category: "Mais pedido",
-    image: "/sopas/caldo-verde-com-calabresa.jpg",
-    imageAlt: "Caldo verde cremoso com couve e rodelas de calabresa",
-    featured: true,
-    checkoutTier: "traditional",
-  },
-  {
-    id: "feijao-bacon-calabresa",
-    name: "Caldo de Feijão com Bacon e Calabresa",
-    description: "Feijão bem temperado, bacon crocante e calabresa em um caldo cremoso e cheio de sabor.",
-    price: "R$ 19,90",
-    size: "500 ml",
-    category: "Mais pedido",
-    image: "/sopas/caldo-de-feijao-com-bacon-e-calabresa.jpg",
-    imageAlt: "Caldo de feijão cremoso com bacon e rodelas de calabresa",
-    featured: true,
-    checkoutTier: "traditional",
-  },
-  {
-    id: "ervilha-bacon-calabresa",
-    name: "Creme de Ervilha com Bacon e Calabresa",
-    description: "Ervilha cremosa com bacon e calabresa dourada. Encorpado, quentinho e muito bem servido.",
-    price: "R$ 19,90",
-    size: "500 ml",
-    category: "Tradicional",
-    image: "/sopas/creme-de-ervilha-com-bacon-e-calabresa.jpg",
-    imageAlt: "Creme de ervilha com pedaços de bacon e calabresa",
-    featured: false,
-    checkoutTier: "traditional",
-  },
-  {
-    id: "frango-legumes",
-    name: "Sopa de Frango com Legumes",
-    description: "Frango desfiado, legumes selecionados e tempero caseiro em uma sopa leve e reconfortante.",
-    price: "R$ 19,90",
-    size: "500 ml",
-    category: "Leve",
-    image: "/sopas/sopa-de-frango-com-legumes.jpg",
-    imageAlt: "Sopa de frango desfiado com cenoura, batata e tempero verde",
-    featured: false,
-    checkoutTier: "traditional",
-  },
-  {
-    id: "aipim-carne-seca",
-    name: "Caldo de Aipim com Carne-Seca",
-    description: "Aipim bem cremoso com carne-seca desfiada e tempero caseiro. Sabor brasileiro em cada colherada.",
-    price: "R$ 23,90",
-    size: "500 ml",
-    category: "Especial",
-    image: "/sopas/caldo-de-aipim-com-carne-seca.jpg",
-    imageAlt: "Caldo cremoso de aipim com carne-seca desfiada",
-    featured: false,
-    checkoutTier: "special",
-  },
-  {
-    id: "abobora-carne-seca",
-    name: "Creme de Abóbora com Carne-Seca",
-    description: "Creme aveludado de abóbora com carne-seca desfiada, equilibrando cremosidade e muito sabor.",
-    price: "R$ 23,90",
-    size: "500 ml",
-    category: "Especial",
-    image: "/sopas/creme-de-abobora-com-carne-seca.jpg",
-    imageAlt: "Creme de abóbora com carne-seca desfiada e cebolinha",
-    featured: false,
-    checkoutTier: "special",
-  },
-] as const;
+const servedCities = [...new Set(partnerKitchens.map((kitchen) => kitchen.city))];
+const servedNeighborhoods = [...new Set(partnerKitchens.map((kitchen) => kitchen.neighborhood))].sort((a, b) =>
+  a.localeCompare(b, "pt-BR"),
+);
 
-export default function Home() {
+const formatBRL = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+export default function Page() {
   const [notice, setNotice] = useState("");
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
   const [nearbyKitchens, setNearbyKitchens] = useState<NearbyKitchen[]>([]);
   const [trackingConsent, setTrackingConsent] = useState<"pending" | "accepted" | "declined">("pending");
   const [cart, setCart] = useState<string[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
-  const [deliveryDetails, setDeliveryDetails] = useState<DeliveryDetails>(emptyDeliveryDetails);
+  const [areaOpen, setAreaOpen] = useState(false);
+  const menuRef = useRef<HTMLElement | null>(null);
+  const viewContentSent = useRef(false);
 
   const cartItems = soups
     .map((soup) => ({ soup, quantity: cart.filter((id) => id === soup.id).length }))
@@ -278,6 +284,25 @@ export default function Home() {
     const savedConsent = window.localStorage.getItem(META_CONSENT_KEY);
     setTrackingConsent(savedConsent === "accepted" ? "accepted" : savedConsent === "declined" ? "declined" : "pending");
   }, []);
+
+  // Recarregar no meio do pedido não pode custar o carrinho. sessionStorage e não
+  // localStorage: o pedido morre junto com a aba, não ressuscita dias depois.
+  useEffect(() => {
+    try {
+      const saved: unknown = JSON.parse(window.sessionStorage.getItem(CART_KEY) ?? "[]");
+      if (!Array.isArray(saved)) return;
+      const valid = saved
+        .filter((id): id is string => typeof id === "string" && soups.some((soup) => soup.id === id))
+        .slice(0, MAX_CART_ITEMS);
+      if (valid.length) setCart(valid);
+    } catch {
+      /* carrinho corrompido: começa vazio */
+    }
+  }, []);
+
+  useEffect(() => {
+    window.sessionStorage.setItem(CART_KEY, JSON.stringify(cart));
+  }, [cart]);
 
   useEffect(() => {
     if (trackingConsent !== "accepted") return;
@@ -306,28 +331,58 @@ export default function Home() {
     window.fbq("track", "PageView");
   }, [trackingConsent]);
 
-  function saveTrackingConsent(consent: "accepted" | "declined") {
-    window.localStorage.setItem(META_CONSENT_KEY, consent);
-    setTrackingConsent(consent);
-  }
+  // ViewContent = a pessoa viu o cardápio de verdade, não que clicou em algo.
+  useEffect(() => {
+    const target = menuRef.current;
+    if (!target || typeof IntersectionObserver === "undefined") return;
 
-  function showNotice(message: string) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting) || viewContentSent.current) return;
+        viewContentSent.current = true;
+        window.fbq?.("track", "ViewContent", {
+          content_ids: soups.map((soup) => soup.id),
+          content_name: "Cardápio Sopa Boa",
+          content_type: "product_group",
+          currency: "BRL",
+          value: 19.9,
+        });
+        observer.disconnect();
+      },
+      { threshold: 0.25 },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [trackingConsent]);
+
+  const showNotice = useCallback((message: string) => {
     setNotice(message);
-    window.setTimeout(() => setNotice(""), 2400);
-  }
+    window.setTimeout(() => setNotice(""), 2200);
+  }, []);
 
-  function addToCart(productId: string) {
+  function addToCart(productId: string, fromMenu = false) {
     const selectedSoup = soups.find((soup) => soup.id === productId);
     if (!selectedSoup) return;
 
     if (cart.length >= MAX_CART_ITEMS) {
       setCartOpen(true);
-      showNotice("O limite inicial é de 4 sopas por pedido.");
+      showNotice("São até 4 sopas por pedido.");
       return;
     }
 
     setCart((currentCart) => [...currentCart, productId]);
-    showNotice(`${selectedSoup.name} adicionada ao pedido.`);
+    showNotice(`${selectedSoup.name} no seu pedido.`);
+
+    if (fromMenu) {
+      window.fbq?.("track", "AddToCart", {
+        content_ids: [selectedSoup.id],
+        content_name: selectedSoup.name,
+        content_type: "product",
+        currency: "BRL",
+        value: selectedSoup.priceValue,
+      });
+    }
   }
 
   function removeFromCart(productId: string) {
@@ -338,12 +393,21 @@ export default function Home() {
     });
   }
 
-  function updateDeliveryDetail(field: keyof DeliveryDetails, value: string) {
-    setDeliveryDetails((currentDetails) => ({ ...currentDetails, [field]: value }));
+  function checkoutUrlWithSource(baseUrl: string) {
+    try {
+      const target = new URL(baseUrl);
+      const current = new URLSearchParams(window.location.search);
+      for (const key of FORWARDED_PARAMS) {
+        const value = current.get(key);
+        if (value) target.searchParams.set(key, value);
+      }
+      return target.toString();
+    } catch {
+      return baseUrl;
+    }
   }
 
-  function continueToPayment(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function continueToPayment() {
     if (!selectedCheckoutUrl || cart.length === 0) return;
 
     window.sessionStorage.setItem(
@@ -351,22 +415,21 @@ export default function Home() {
       JSON.stringify({
         items: cartItems.map(({ soup, quantity }) => ({ id: soup.id, name: soup.name, quantity })),
         total: cartTotal,
-        delivery: deliveryDetails,
         savedAt: new Date().toISOString(),
       }),
     );
 
-    const eventDetails = {
+    window.fbq?.("track", "InitiateCheckout", {
       content_ids: cart,
       content_name: cartItems.map(({ soup, quantity }) => `${quantity}x ${soup.name}`).join(", "),
       content_type: "product",
       currency: "BRL",
       num_items: cart.length,
       value: cartTotal,
-    };
+    });
 
-    window.fbq?.("track", "InitiateCheckout", eventDetails);
-    window.setTimeout(() => window.location.assign(selectedCheckoutUrl), window.fbq ? 120 : 0);
+    const destination = checkoutUrlWithSource(selectedCheckoutUrl);
+    window.setTimeout(() => window.location.assign(destination), window.fbq ? 120 : 0);
   }
 
   function findNearbyKitchens() {
@@ -398,362 +461,289 @@ export default function Home() {
     );
   }
 
-  function openCartOrMenu() {
-    if (cart.length > 0) {
-      setCartOpen(true);
-      return;
-    }
+  function saveTrackingConsent(consent: "accepted" | "declined") {
+    window.localStorage.setItem(META_CONSENT_KEY, consent);
+    setTrackingConsent(consent);
+  }
 
+  function goToMenu() {
     document.querySelector("#cardapio")?.scrollIntoView({ behavior: "smooth" });
   }
 
   return (
     <main>
       <header className="site-header">
-        <a className="brand" href="#inicio" aria-label="Sopa Boa — início">
+        <a className="brand" href="#topo" aria-label="Sopa Boa — início">
           <span className="brand-mark" aria-hidden="true">S</span>
           <span>Sopa Boa</span>
         </a>
-        <nav aria-label="Navegação principal">
-          <a href="#perto-de-voce">Perto de você</a>
-          <a href="#cardapio">Cardápio</a>
-          <a href="#como-funciona">Como pedir</a>
-          <button className="nav-cta" onClick={openCartOrMenu}>
-            {cart.length > 0 ? `Carrinho (${cart.length})` : "Pedir agora"}
-          </button>
-        </nav>
+        <button className="header-cta" onClick={goToMenu}>Pedir</button>
       </header>
 
-      <section className="hero" id="inicio">
-        <div className="hero-copy">
-          <div className="eyebrow"><span /> Cozinhas locais • entrega no Rio • Pix</div>
-          <h1>Sopa quentinha, pertinho de você.</h1>
-          <p className="hero-text">
-            Encontre cozinhas parceiras na sua região e peça caldos caprichados
-            de 500 ml a partir de R$ 19,90.
-          </p>
-          <div className="hero-actions">
-            <a className="primary-button" href="#perto-de-voce">
-              Encontrar sopa perto de mim <span aria-hidden="true">→</span>
-            </a>
-            <a className="text-link" href="#cardapio">Conhecer o cardápio</a>
-          </div>
-          <div className="hero-trust" aria-label="Vantagens">
-            <span>✓ Pix confirmado na hora</span>
-            <span>✓ Preços de lançamento</span>
-            <span>✓ Localização não armazenada</span>
-          </div>
+      <section className="hero" id="topo">
+        <div className="hero-photo">
+          <img
+            src="/sopas/caldo-verde-com-calabresa.jpg"
+            alt="Caldo verde com calabresa servido em uma tigela"
+            width={1200}
+            height={900}
+            fetchPriority="high"
+          />
         </div>
-
-        <div className="hero-art" aria-label="Ilustração de uma tigela de sopa quente">
-          <div className="sun" />
-          <div className="steam steam-one" />
-          <div className="steam steam-two" />
-          <div className="steam steam-three" />
-          <div className="bowl">
-            <div className="soup">
-              <span className="garnish garnish-one" />
-              <span className="garnish garnish-two" />
-              <span className="garnish garnish-three" />
-            </div>
-          </div>
-          <div className="hero-card">
-            <span className="status-dot" />
-            <div><strong>Pedido fácil</strong><small>Escolha, pague e pronto</small></div>
-          </div>
+        <div className="hero-copy">
+          <span className="hero-eyebrow">Delivery de sopas no Rio</span>
+          <h1>Sopa quentinha chegando na sua casa 🍲</h1>
+          <p>Caldos de 500 ml a partir de R$ 19,90. Escolha seu sabor e peça em poucos minutos.</p>
+          <ul className="hero-facts">
+            <li>500 ml</li>
+            <li>a partir de R$ 19,90</li>
+            <li>entrega em {DELIVERY_ETA}</li>
+          </ul>
+          <button className="primary-button" onClick={goToMenu}>
+            Ver sabores e pedir
+          </button>
+          <p className="hero-hours">{OPENING_HOURS} • pagamento no Pix</p>
         </div>
       </section>
 
-      <section className="menu-section" id="cardapio">
-        <div className="section-heading">
-          <div>
-            <div className="menu-kickers">
-              <span className="kicker">Cardápio</span>
-              <span className="launch-label">Preços de lançamento</span>
-            </div>
-            <h2>Qual vai aquecer seu dia?</h2>
-          </div>
-          <p>Caldos de 500 ml, preparados no dia e enviados bem quentinhos. A partir de R$ 19,90.</p>
-        </div>
+      <section className="menu-section" id="cardapio" ref={menuRef}>
+        <h2>Escolha seu caldo</h2>
+        <p className="section-sub">Preparados no dia e enviados bem quentinhos.</p>
 
-        <div className="menu-grid">
+        <div className="menu-list">
           {soups.map((soup) => (
-            <article className={`menu-card${soup.featured ? " featured" : ""}`} key={soup.id}>
-              <div className="menu-visual" role="img" aria-label={soup.imageAlt}>
-                <span className="soup-photo" style={{ backgroundImage: `url(${soup.image})` }} aria-hidden="true" />
-              </div>
-              <div className="menu-content">
-                <div className="menu-meta">
-                  <span className={`menu-badge${soup.featured ? " popular" : ""}`}>{soup.category}</span>
-                  <span className="menu-size">{soup.size}</span>
-                </div>
+            <article className={`menu-card${soup.featured ? " is-featured" : ""}`} key={soup.id}>
+              <img
+                className="menu-photo"
+                src={soup.image}
+                alt={soup.imageAlt}
+                width={480}
+                height={360}
+                loading={soup.featured ? "eager" : "lazy"}
+              />
+              <div className="menu-body">
+                {soup.badge ? <span className="menu-badge">{soup.badge}</span> : null}
                 <h3>{soup.name}</h3>
                 <p>{soup.description}</p>
-                <div className="menu-card-footer">
-                  <div className="menu-price">
-                    <small>Preço de lançamento</small>
+                <div className="menu-foot">
+                  <span className="menu-price">
+                    <small>{soup.size}</small>
                     <strong>{soup.price}</strong>
-                  </div>
+                  </span>
                   <button
-                    onClick={() => {
-                      window.fbq?.("track", "ViewContent", {
-                        content_ids: [soup.id],
-                        content_name: soup.name,
-                        content_type: "product",
-                        currency: "BRL",
-                        value: soup.checkoutTier === "traditional" ? 19.9 : 23.9,
-                      });
-                      addToCart(soup.id);
-                    }}
-                    aria-label={`Adicionar ${soup.name}, ${soup.size}, por ${soup.price}`}
+                    className="add-button"
+                    onClick={() => addToCart(soup.id, true)}
+                    aria-label={`Adicionar ${soup.name} por ${soup.price}`}
                   >
-                    Adicionar <span aria-hidden="true">＋</span>
+                    Adicionar
                   </button>
                 </div>
               </div>
             </article>
           ))}
         </div>
-        <div className="drink-strip" aria-label="Bebidas disponíveis no checkout">
-          <div className="drink-strip-heading">
-            <span aria-hidden="true">🥤</span>
-            <div>
-              <strong>REFRIGERANTES — ESCOLHA NO CHECKOUT</strong>
-              <small>Estas opções não são botões. Adicione a bebida depois de clicar em “Ir para o checkout”.</small>
-            </div>
-          </div>
-          <div className="drink-options">
-            <span><strong>Coca-Cola ou Guaraná • lata</strong><small>NO CHECKOUT • R$ 7,99</small></span>
-            <span><strong>Coca-Cola ou Guaraná • 2 L</strong><small>NO CHECKOUT • R$ 14,99</small></span>
-            <span><strong>2 pães franceses</strong><small>NO CHECKOUT • R$ 2,99</small></span>
-          </div>
+
+        <div className="extras">
+          <h3>Complete seu pedido</h3>
+          <ul>
+            {EXTRAS.map((extra) => (
+              <li key={extra.name}>
+                <span aria-hidden="true">{extra.icon}</span>
+                <div>
+                  <strong>{extra.name}</strong>
+                  <small>{extra.detail}</small>
+                </div>
+                <b>{extra.price}</b>
+              </li>
+            ))}
+          </ul>
+          <small className="extras-note">Você adiciona os acompanhamentos na tela de pagamento.</small>
         </div>
-        <p className="menu-note">Sabores sujeitos à disponibilidade da cozinha que atende sua região.</p>
       </section>
 
-      <section className="locator-section" id="perto-de-voce">
-        <div className="locator-copy">
-          <span className="kicker light">Perto de você</span>
-          <h2>Encontre uma cozinha que entrega na sua região.</h2>
-          <p>
-            Sua localização é usada somente neste navegador para comparar distâncias.
-            Ela não é salva, enviada nem adicionada ao seu perfil.
-          </p>
-          <button className="location-button" onClick={findNearbyKitchens} disabled={locationStatus === "locating"}>
-            <span aria-hidden="true">⌖</span>
-            {locationStatus === "locating" ? "Buscando sua região…" : "Usar minha localização"}
+      <section className="area-section" id="entrega">
+        <h2>Entregamos na sua região?</h2>
+        <p className="section-sub">
+          Temos cozinhas no Rio e na Baixada. Seu pedido sai da mais perto de você, num raio de até 7 km.
+        </p>
+
+        <div className="area-actions">
+          <button className="ghost-button" onClick={findNearbyKitchens} disabled={locationStatus === "locating"}>
+            {locationStatus === "locating" ? "Verificando…" : "Usar minha localização"}
           </button>
-          <small>O navegador pedirá sua autorização antes de compartilhar a posição.</small>
+          <button className="link-button" onClick={() => setAreaOpen((open) => !open)} aria-expanded={areaOpen}>
+            {areaOpen ? "Fechar lista de bairros" : "Ver bairros atendidos"}
+          </button>
         </div>
+        <small className="area-privacy">Sua localização é usada só neste aparelho e não é salva.</small>
 
-        <div className="locator-results" aria-live="polite">
-          {locationStatus === "idle" && (
-            <div className="locator-placeholder">
-              <span aria-hidden="true">⌖</span>
-              <strong>Descubra quem entrega aí</strong>
-              <p>Toque no botão para ver as cozinhas parceiras por ordem de proximidade.</p>
+        <div aria-live="polite">
+          {locationStatus === "found" && nearbyKitchens.length > 0 && (
+            <div className="area-result ok">
+              <strong>Sim, entregamos aí 🎉</strong>
+              <p>
+                A cozinha mais próxima fica em {nearbyKitchens[0].neighborhood} ({nearbyKitchens[0].city}), a cerca de{" "}
+                {nearbyKitchens[0].distanceKm.toFixed(1).replace(".", ",")} km. Entrega em {DELIVERY_ETA}.
+              </p>
+              <button className="primary-button small" onClick={goToMenu}>Escolher meu caldo</button>
             </div>
           )}
-
-          {locationStatus === "locating" && (
-            <div className="locator-placeholder">
-              <span className="locator-spinner" aria-hidden="true" />
-              <strong>Procurando cozinhas próximas…</strong>
-              <p>Isso costuma levar apenas alguns segundos.</p>
-            </div>
-          )}
-
-          {locationStatus === "found" && (
-            <div className="nearby-list">
-              <div className="result-heading">
-                <span className="status-dot" />
-                <strong>{nearbyKitchens.length === 1 ? "Encontramos uma cozinha perto de você" : `Encontramos ${nearbyKitchens.length} cozinhas perto de você`}</strong>
-              </div>
-              {nearbyKitchens.slice(0, MAX_KITCHEN_RESULTS).map((kitchen, index) => (
-                <article className="kitchen-result" key={kitchen.id}>
-                  <span className="result-rank">{index + 1}</span>
-                  <div>
-                    <strong>{kitchen.name} • {kitchen.neighborhood}</strong>
-                    <small>{kitchen.city} • aprox. {kitchen.distanceKm.toFixed(1).replace(".", ",")} km • {kitchen.eta}</small>
-                  </div>
-                  <a href="#cardapio">Ver menu</a>
-                </article>
-              ))}
-              {nearbyKitchens.length > MAX_KITCHEN_RESULTS && (
-                <p className="demo-note">{MAX_KITCHEN_RESULTS === 1 ? "Mostrando a mais próxima." : `Mostrando as ${MAX_KITCHEN_RESULTS} mais próximas.`}</p>
-              )}
-            </div>
-          )}
-
           {locationStatus === "outside" && (
-            <div className="locator-placeholder compact">
-              <span aria-hidden="true">⌖</span>
-              <strong>Ainda não chegamos à sua região</strong>
-              <p>Estamos cadastrando novas cozinhas. Tente novamente em breve.</p>
+            <div className="area-result">
+              <strong>Ainda não chegamos aí</strong>
+              <p>Estamos abrindo cozinhas novas toda semana. Volte para conferir em breve.</p>
             </div>
           )}
-
           {locationStatus === "denied" && (
-            <div className="locator-placeholder compact">
-              <span aria-hidden="true">!</span>
-              <strong>Localização não autorizada</strong>
-              <p>Você pode liberar a permissão no navegador e tentar novamente.</p>
+            <div className="area-result">
+              <strong>Sem problema</strong>
+              <p>Você pode conferir a lista de bairros atendidos aqui embaixo.</p>
             </div>
           )}
-
           {locationStatus === "unavailable" && (
-            <div className="locator-placeholder compact">
-              <span aria-hidden="true">!</span>
-              <strong>Não foi possível obter sua localização</strong>
-              <p>Confira se a localização do aparelho está ativada e tente outra vez.</p>
+            <div className="area-result">
+              <strong>Não consegui pegar sua localização</strong>
+              <p>Confira a lista de bairros atendidos aqui embaixo.</p>
             </div>
           )}
         </div>
+
+        {areaOpen && (
+          <div className="area-list">
+            <p>
+              Atendemos estes bairros <strong>e os arredores</strong>, em {servedCities.join(", ")}:
+            </p>
+            <div className="area-chips">
+              {servedNeighborhoods.map((neighborhood) => (
+                <span key={neighborhood}>{neighborhood}</span>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
-      <section className="steps-section" id="como-funciona">
-        <div className="steps-intro">
-          <span className="kicker light">Como funciona</span>
-          <h2>Seu jantar resolvido em poucos minutos.</h2>
-          <p>Sem cadastro demorado e sem precisar enviar comprovante.</p>
-        </div>
-        <div className="steps-grid">
-          <article><span>01</span><h3>Escolha</h3><p>Veja os sabores disponíveis e monte seu pedido.</p></article>
-          <article><span>02</span><h3>Pague no Pix</h3><p>Use o QR Code ou o código copia e cola do checkout.</p></article>
-          <article><span>03</span><h3>Receba</h3><p>Com o pagamento aprovado, preparamos tudo para entrega.</p></article>
-        </div>
+      <section className="trust-section">
+        <h2>Como funciona o pedido</h2>
+        <ul className="trust-list">
+          <li>
+            <span aria-hidden="true">🍲</span>
+            <div><strong>500 ml bem servidos</strong><small>Preparados no dia, enviados quentinhos.</small></div>
+          </li>
+          <li>
+            <span aria-hidden="true">🏠</span>
+            <div><strong>Entrega na sua região</strong><small>{DELIVERY_ETA}, {DELIVERY_RANGE}.</small></div>
+          </li>
+          <li>
+            <span aria-hidden="true">🕕</span>
+            <div><strong>Horário de atendimento</strong><small>{OPENING_HOURS}.</small></div>
+          </li>
+          <li>
+            <span aria-hidden="true">🔒</span>
+            <div><strong>Pagamento no Pix</strong><small>Confirmação na hora, sem enviar comprovante.</small></div>
+          </li>
+        </ul>
       </section>
 
       <section className="final-cta">
-        <div>
-          <span className="kicker">Bateu a fome?</span>
-          <h2>Hoje combina com sopa.</h2>
-          <p>Confira os sabores disponíveis e faça seu pedido pelo Pix.</p>
-        </div>
-        <button className="primary-button dark" onClick={openCartOrMenu}>
-          Fazer meu pedido <span aria-hidden="true">→</span>
-        </button>
+        <h2>Bateu a fome?</h2>
+        <button className="primary-button" onClick={goToMenu}>Ver sabores e pedir</button>
       </section>
 
       <footer>
-        <a className="brand footer-brand" href="#inicio">
+        <span className="brand footer-brand">
           <span className="brand-mark" aria-hidden="true">S</span>
           <span>Sopa Boa</span>
-        </a>
-        <p>Comida de verdade, feita com carinho.</p>
-        <small>© {new Date().getFullYear()} Sopa Boa. Todos os direitos reservados.</small>
+        </span>
+        <p>Sopa caseira entregue no Rio e na Baixada Fluminense.</p>
+        <p className="footer-info">
+          {OPENING_HOURS} • Entrega {DELIVERY_RANGE} • Pagamento no Pix
+        </p>
+        <small>© {new Date().getFullYear()} Sopa Boa</small>
       </footer>
 
-      <button className="mobile-order" onClick={openCartOrMenu}>
-        {cart.length > 0 ? `Ver pedido (${cart.length}) • ${cartTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}` : "Montar meu pedido"}
-      </button>
+      {cart.length > 0 && !cartOpen && (
+        <button className="cart-bar" onClick={() => setCartOpen(true)}>
+          <span>
+            {cart.length} {cart.length === 1 ? "item" : "itens"} · {formatBRL(cartTotal)}
+          </span>
+          <b>Ver pedido →</b>
+        </button>
+      )}
 
       {cartOpen && (
         <div className="cart-layer" role="presentation">
-          <button className="cart-backdrop" aria-label="Fechar carrinho" onClick={() => setCartOpen(false)} />
+          <button className="cart-backdrop" aria-label="Fechar pedido" onClick={() => setCartOpen(false)} />
           <aside className="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title">
             <div className="cart-header">
-              <div>
-                <span className="kicker">Seu pedido</span>
-                <h2 id="cart-title">Monte seu jantar</h2>
-              </div>
-              <button className="cart-close" onClick={() => setCartOpen(false)} aria-label="Fechar carrinho">×</button>
+              <h2 id="cart-title">Seu pedido</h2>
+              <button className="cart-close" onClick={() => setCartOpen(false)} aria-label="Fechar">×</button>
             </div>
 
             {cart.length === 0 ? (
               <div className="empty-cart">
-                <strong>Seu carrinho está vazio</strong>
-                <p>Escolha até quatro sopas do cardápio para continuar.</p>
-                <button onClick={() => setCartOpen(false)}>Ver cardápio</button>
+                <strong>Nada por aqui ainda</strong>
+                <button className="primary-button" onClick={() => setCartOpen(false)}>Ver o cardápio</button>
               </div>
             ) : (
-              <form className="checkout-form" onSubmit={continueToPayment}>
-                <div className="cart-limit"><strong>{cart.length} de {MAX_CART_ITEMS}</strong> sopas adicionadas</div>
-
+              <>
                 <div className="cart-items">
                   {cartItems.map(({ soup, quantity }) => (
                     <article className="cart-item" key={soup.id}>
-                      <span className="cart-item-photo" style={{ backgroundImage: `url(${soup.image})` }} aria-hidden="true" />
-                      <div>
+                      <img src={soup.image} alt="" width={64} height={64} loading="lazy" />
+                      <div className="cart-item-info">
                         <strong>{soup.name}</strong>
                         <small>{soup.size} • {soup.price}</small>
                       </div>
-                      <div className="quantity-control" aria-label={`Quantidade de ${soup.name}`}>
+                      <div className="quantity-control">
                         <button type="button" onClick={() => removeFromCart(soup.id)} aria-label={`Remover uma unidade de ${soup.name}`}>−</button>
-                        <span>{quantity}</span>
-                        <button type="button" onClick={() => addToCart(soup.id)} disabled={cart.length >= MAX_CART_ITEMS} aria-label={`Adicionar outra unidade de ${soup.name}`}>＋</button>
+                        <span aria-label={`${quantity} unidades`}>{quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => addToCart(soup.id)}
+                          disabled={cart.length >= MAX_CART_ITEMS}
+                          aria-label={`Adicionar outra unidade de ${soup.name}`}
+                        >
+                          ＋
+                        </button>
                       </div>
                     </article>
                   ))}
                 </div>
 
-                <button className="add-more" type="button" onClick={() => setCartOpen(false)} disabled={cart.length >= MAX_CART_ITEMS}>
-                  {cart.length >= MAX_CART_ITEMS ? "Limite de 4 sopas atingido" : "+ Adicionar outro sabor"}
+                <button
+                  className="add-more"
+                  type="button"
+                  onClick={() => setCartOpen(false)}
+                  disabled={cart.length >= MAX_CART_ITEMS}
+                >
+                  {cart.length >= MAX_CART_ITEMS ? "Máximo de 4 sopas" : "+ Adicionar outro sabor"}
                 </button>
 
-                <div className="checkout-extra-note">
-                  <span aria-hidden="true">🥤</span>
-                  <div><strong>Bebidas e pães</strong><small>No checkout você pode adicionar refrigerante e 2 pães franceses por R$ 2,99.</small></div>
-                </div>
-
-                <div className="cart-total">
-                  <span>Total do pedido</span>
-                  <strong>{cartTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>
-                </div>
-
-                <div className="delivery-form">
-                  <div className="form-heading">
+                <div className="cart-summary">
+                  <div className="summary-row">
+                    <span>{cart.length} {cart.length === 1 ? "sopa" : "sopas"} de 500 ml</span>
+                    <span>{formatBRL(cartTotal)}</span>
+                  </div>
+                  <div className="summary-row muted">
                     <span>Entrega</span>
-                    <strong>25 a 35 min • até 7 km</strong>
+                    <span>{DELIVERY_ETA}</span>
                   </div>
-
-                  <div className="form-grid">
-                    <label className="wide-field">
-                      Nome
-                      <input required autoComplete="name" value={deliveryDetails.name} onChange={(event) => updateDeliveryDetail("name", event.target.value)} placeholder="Quem vai receber?" />
-                    </label>
-                    <label>
-                      WhatsApp
-                      <input required inputMode="tel" autoComplete="tel" value={deliveryDetails.whatsapp} onChange={(event) => updateDeliveryDetail("whatsapp", event.target.value)} placeholder="(21) 99999-9999" />
-                    </label>
-                    <label>
-                      CEP
-                      <input required inputMode="numeric" autoComplete="postal-code" value={deliveryDetails.cep} onChange={(event) => updateDeliveryDetail("cep", event.target.value)} placeholder="00000-000" />
-                    </label>
-                    <label className="street-field">
-                      Rua
-                      <input required autoComplete="address-line1" value={deliveryDetails.street} onChange={(event) => updateDeliveryDetail("street", event.target.value)} placeholder="Nome da rua" />
-                    </label>
-                    <label className="number-field">
-                      Número
-                      <input required inputMode="numeric" value={deliveryDetails.number} onChange={(event) => updateDeliveryDetail("number", event.target.value)} placeholder="123" />
-                    </label>
-                    <label>
-                      Bairro
-                      <input required autoComplete="address-level3" value={deliveryDetails.neighborhood} onChange={(event) => updateDeliveryDetail("neighborhood", event.target.value)} placeholder="Seu bairro" />
-                    </label>
-                    <label>
-                      Complemento
-                      <input autoComplete="address-line2" value={deliveryDetails.complement} onChange={(event) => updateDeliveryDetail("complement", event.target.value)} placeholder="Apto, bloco…" />
-                    </label>
-                    <label className="wide-field">
-                      Ponto de referência
-                      <input value={deliveryDetails.reference} onChange={(event) => updateDeliveryDetail("reference", event.target.value)} placeholder="Ex.: próximo à praça" />
-                    </label>
-                    <label className="wide-field">
-                      Observações
-                      <textarea value={deliveryDetails.notes} onChange={(event) => updateDeliveryDetail("notes", event.target.value)} placeholder="Alguma orientação para a entrega?" rows={3} />
-                    </label>
+                  <div className="summary-row total">
+                    <span>Total</span>
+                    <strong>{formatBRL(cartTotal)}</strong>
                   </div>
-
-                  <p className="privacy-note">Seus dados não entram na URL de pagamento. Eles ficam temporariamente neste aparelho; a cozinha confirma o endereço pelo WhatsApp.</p>
                 </div>
 
-                <button className="pay-button" type="submit">
-                  Ir para o Pix seguro <span aria-hidden="true">→</span>
+                <p className="cart-next">
+                  Na próxima tela você paga no Pix e pode adicionar refrigerante ou pães.
+                  Depois do pagamento confirmamos o endereço da entrega pelo WhatsApp.
+                </p>
+
+                <button className="pay-button" type="button" onClick={continueToPayment}>
+                  Ir para o pagamento · {formatBRL(cartTotal)}
                 </button>
-                <small className="pay-helper">Você verá o resumo e o valor exato no checkout da SharkBot.</small>
-              </form>
+                <small className="pay-helper">Pagamento no Pix processado pela SharkBot.</small>
+              </>
             )}
           </aside>
         </div>
@@ -765,16 +755,14 @@ export default function Home() {
 
       {trackingConsent === "pending" && (
         <aside className="cookie-banner" aria-label="Preferências de privacidade">
-          <div>
-            <strong>Privacidade do seu jeito</strong>
-            <p>Usamos cookies da Meta somente para medir os anúncios e melhorar as ofertas. Você pode continuar sem aceitar.</p>
-          </div>
+          <p>Usamos cookies para medir nossos anúncios.</p>
           <div className="cookie-actions">
-            <button className="cookie-decline" onClick={() => saveTrackingConsent("declined")}>Continuar sem cookies</button>
-            <button className="cookie-accept" onClick={() => saveTrackingConsent("accepted")}>Aceitar medição</button>
+            <button className="cookie-decline" onClick={() => saveTrackingConsent("declined")}>Agora não</button>
+            <button className="cookie-accept" onClick={() => saveTrackingConsent("accepted")}>Aceitar</button>
           </div>
         </aside>
       )}
     </main>
   );
+
 }
