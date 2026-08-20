@@ -36,7 +36,8 @@ export async function POST(request: Request) {
   // --- itens: o preço vem do catálogo do servidor, nunca do navegador --------
   const rawItems = Array.isArray(body.items) ? body.items : [];
   const ids = rawItems.filter((id): id is string => typeof id === "string");
-  if (!ids.length) return bad("Pedido sem itens");
+  // Pedido só de acompanhamento é permitido: decisão do dono, que banca a
+  // entrega. O que não pode é pedido vazio — conferido depois dos extras.
   if (ids.length > MAX_CART_ITEMS) return bad(`Máximo de ${MAX_CART_ITEMS} sopas por pedido`);
 
   const resolved = ids.map(findSoup);
@@ -64,7 +65,9 @@ export async function POST(request: Request) {
   }
 
   const items = [...grouped.values()];
+  if (!items.length) return bad("Pedido sem itens");
   const total = Math.round(items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0) * 100) / 100;
+  if (total <= 0) return bad("Total inválido");
 
   // --- cliente ---------------------------------------------------------------
   const name = (body.customer?.name ?? "").trim();

@@ -799,7 +799,7 @@ export default function Page() {
         <small>© {new Date().getFullYear()} Sopa Boa</small>
       </footer>
 
-      {cart.length > 0 && !cartOpen && (
+      {cart.length + extrasCount > 0 && !cartOpen && (
         <button className="cart-bar" onClick={() => setCartOpen(true)}>
           <span>
             {cart.length + extrasCount} {cart.length + extrasCount === 1 ? "item" : "itens"} ·{" "}
@@ -942,7 +942,7 @@ export default function Page() {
                   Voltar ao pedido
                 </button>
               </form>
-            ) : cart.length === 0 ? (
+            ) : cart.length + extrasCount === 0 ? (
               <div className="empty-cart">
                 <strong>Nada por aqui ainda</strong>
                 <button className="primary-button" onClick={() => setCartOpen(false)}>Ver o cardápio</button>
@@ -1005,10 +1005,12 @@ export default function Page() {
                 )}
 
                 <div className="cart-summary">
-                  <div className="summary-row">
-                    <span>{cart.length} {cart.length === 1 ? "sopa" : "sopas"} de 500 ml</span>
-                    <span>{formatBRL(soupsTotal)}</span>
-                  </div>
+                  {cart.length > 0 && (
+                    <div className="summary-row">
+                      <span>{cart.length} {cart.length === 1 ? "sopa" : "sopas"} de 500 ml</span>
+                      <span>{formatBRL(soupsTotal)}</span>
+                    </div>
+                  )}
                   {extrasCount > 0 && (
                     <div className="summary-row">
                       <span>{extrasCount} {extrasCount === 1 ? "acompanhamento" : "acompanhamentos"}</span>
