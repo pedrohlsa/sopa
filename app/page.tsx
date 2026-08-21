@@ -26,6 +26,9 @@ const MAX_KITCHEN_RESULTS = 1;
 
 const OPENING_HOURS = "Todos os dias, das 18h à meia-noite";
 const DELIVERY_ETA = "25 a 35 min";
+// Fora do raio das cozinhas a entrega é mais longa, e o cliente precisa saber
+// disso antes de pagar. Prometer 25 min e chegar em 1h gera reembolso.
+const EXTENDED_ETA = "35 a 45 min";
 const DELIVERY_RANGE = "até 7 km da cozinha mais próxima";
 
 const CHECKOUT_URLS: Record<string, string> = {
@@ -186,6 +189,7 @@ export default function Page() {
   const [cart, setCart] = useState<string[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [areaOpen, setAreaOpen] = useState(false);
+  const [entregaEstendida, setEntregaEstendida] = useState(false);
   const [extrasCart, setExtrasCart] = useState<Record<string, number>>({});
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "dados" | "pix">("cart");
   const [form, setForm] = useState({
@@ -437,16 +441,20 @@ export default function Page() {
 
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
-        const matches = partnerKitchens
+        const ordenadas = partnerKitchens
           .map((kitchen) => ({
             ...kitchen,
             distanceKm: getDistanceKm(coords.latitude, coords.longitude, kitchen.latitude, kitchen.longitude),
           }))
-          .filter((kitchen) => kitchen.distanceKm <= kitchen.radiusKm)
           .sort((first, second) => first.distanceKm - second.distanceKm);
 
-        setNearbyKitchens(matches);
-        setLocationStatus(matches.length > 0 ? "found" : "outside");
+        // Ninguém é recusado: quem estiver fora do raio das cozinhas continua
+        // podendo pedir, só com prazo maior e dito na cara. A entrega dessas
+        // regiões é resolvida na mão pela operação.
+        const dentroDoRaio = ordenadas.filter((kitchen) => kitchen.distanceKm <= kitchen.radiusKm);
+        setEntregaEstendida(dentroDoRaio.length === 0);
+        setNearbyKitchens(dentroDoRaio.length > 0 ? dentroDoRaio : ordenadas.slice(0, 1));
+        setLocationStatus("found");
       },
       (error) => {
         setLocationStatus(error.code === error.PERMISSION_DENIED ? "denied" : "unavailable");
@@ -722,21 +730,18 @@ export default function Page() {
           {locationStatus === "found" && nearbyKitchens.length > 0 && (
             <div className="area-result ok">
               <strong>Sim, entregamos aí 🎉</strong>
-              <p>
-                A cozinha mais próxima fica em {nearbyKitchens[0].neighborhood} ({nearbyKitchens[0].city}), a cerca de{" "}
-                {nearbyKitchens[0].distanceKm.toFixed(1).replace(".", ",")} km. Entrega em {DELIVERY_ETA}.
-              </p>
+              {entregaEstendida ? (
+                <p>
+                  Você está um pouco mais longe das nossas cozinhas, então a entrega leva{" "}
+                  <strong>{EXTENDED_ETA}</strong>. No resto é tudo igual: mesma sopa, mesmo preço.
+                </p>
+              ) : (
+                <p>
+                  A cozinha mais próxima fica em {nearbyKitchens[0].neighborhood} ({nearbyKitchens[0].city}), a cerca de{" "}
+                  {nearbyKitchens[0].distanceKm.toFixed(1).replace(".", ",")} km. Entrega em {DELIVERY_ETA}.
+                </p>
+              )}
               <button className="primary-button small" onClick={goToMenu}>Escolher meu caldo</button>
-            </div>
-          )}
-          {locationStatus === "outside" && (
-            <div className="area-result">
-              <strong>Você está fora do raio das nossas cozinhas</strong>
-              <p>
-                Ainda assim dá para pedir. A entrega vai levar <strong>mais do que {DELIVERY_ETA}</strong>,
-                e a gente combina o horário com você pelo WhatsApp depois do pedido.
-              </p>
-              <button className="primary-button small" onClick={goToMenu}>Pedir mesmo assim</button>
             </div>
           )}
           {locationStatus === "denied" && (
@@ -833,7 +838,8 @@ export default function Page() {
                   <div className="pix-confirmado">
                     <strong>Pagamento confirmado 🎉</strong>
                     <p>
-                      Já estamos preparando seu pedido. A entrega chega em {DELIVERY_ETA}. Se
+                      Já estamos preparando seu pedido. A entrega chega em{" "}
+                      {entregaEstendida ? EXTENDED_ETA : DELIVERY_ETA}. Se
                       precisarmos confirmar algo, chamamos no WhatsApp.
                     </p>
                     <button className="primary-button" onClick={fecharPedido}>Fechar</button>
@@ -1026,7 +1032,7 @@ export default function Page() {
                   )}
                   <div className="summary-row muted">
                     <span>Entrega</span>
-                    <span>{DELIVERY_ETA}</span>
+                    <span>{entregaEstendida ? EXTENDED_ETA : DELIVERY_ETA}</span>
                   </div>
                   <div className="summary-row total">
                     <span>Total</span>
