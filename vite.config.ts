@@ -6,6 +6,15 @@ import hostingConfig from "./.openai/hosting.json";
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   "00000000-0000-4000-8000-000000000000";
 
+// O OpenAI Sites injeta o database_id real no momento do deploy, por isso o
+// placeholder basta la. Fora dele -- no Cloudflare Workers, por exemplo --
+// ninguem injeta nada, e o worker publicado apontaria para um banco que nao
+// existe. Estas variaveis cobrem esse caso.
+const D1_DATABASE_ID =
+  process.env.CLOUDFLARE_D1_DATABASE_ID || SITE_CREATOR_PLACEHOLDER_DATABASE_ID;
+const D1_DATABASE_NAME =
+  process.env.CLOUDFLARE_D1_DATABASE_NAME || "site-creator-d1";
+
 const { d1, r2 } = hostingConfig;
 
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
@@ -18,8 +27,8 @@ const localBindingConfig = {
     ? [
         {
           binding: d1,
-          database_name: "site-creator-d1",
-          database_id: SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
+          database_name: D1_DATABASE_NAME,
+          database_id: D1_DATABASE_ID,
         },
       ]
     : [],
