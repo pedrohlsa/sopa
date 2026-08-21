@@ -115,6 +115,16 @@ test("fires the funnel events and never fakes Purchase", async () => {
   assert.doesNotMatch(meta, /ph: \[input\.customerPhone\]/);
 });
 
+test("usa o caminho certo da VeoPag", async () => {
+  const veopag = await readFile(new URL("../server/veopag.ts", import.meta.url), "utf8");
+
+  // O indice da documentacao lista "/api/deposits", que responde 404 com
+  // "Route not found." O caminho real e este. Custou um deploy descobrir.
+  assert.match(veopag, /\/api\/payments\/deposit/);
+  assert.doesNotMatch(veopag, /\/api\/deposits/);
+  assert.match(veopag, /\/api\/auth\/login/);
+});
+
 test("o webhook nao conta a mesma venda duas vezes", async () => {
   const webhook = await readFile(new URL("../app/api/webhooks/veopag/route.ts", import.meta.url), "utf8");
 

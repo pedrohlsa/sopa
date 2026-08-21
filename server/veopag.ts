@@ -79,7 +79,9 @@ export type CreatePixResult = {
 export async function createPixCharge(input: CreatePixInput): Promise<CreatePixResult> {
   const token = await getToken();
 
-  const response = await fetch(`${baseUrl()}/api/deposits`, {
+  // O caminho é /api/payments/deposit. O indice da documentação (llms.txt) lista
+  // "/api/deposits", que responde 404 — quem vale é a página do endpoint.
+  const response = await fetch(`${baseUrl()}/api/payments/deposit`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
