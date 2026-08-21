@@ -120,9 +120,11 @@ test("usa o caminho certo da VeoPag", async () => {
 
   // O indice da documentacao lista "/api/deposits", que responde 404 com
   // "Route not found." O caminho real e este. Custou um deploy descobrir.
-  assert.match(veopag, /\/api\/payments\/deposit/);
-  assert.doesNotMatch(veopag, /\/api\/deposits/);
-  assert.match(veopag, /\/api\/auth\/login/);
+  // Olha a chamada em si, nao o arquivo todo: o comentario ao lado cita o
+  // caminho errado de proposito, para ninguem reintroduzir por engano.
+  assert.match(veopag, /baseUrl\(\)\}\/api\/payments\/deposit/);
+  assert.doesNotMatch(veopag, /baseUrl\(\)\}\/api\/deposits/);
+  assert.match(veopag, /baseUrl\(\)\}\/api\/auth\/login/);
 });
 
 test("o webhook nao conta a mesma venda duas vezes", async () => {
