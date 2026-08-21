@@ -125,6 +125,11 @@ test("usa o caminho certo da VeoPag", async () => {
   assert.match(veopag, /baseUrl\(\)\}\/api\/payments\/deposit/);
   assert.doesNotMatch(veopag, /baseUrl\(\)\}\/api\/deposits/);
   assert.match(veopag, /baseUrl\(\)\}\/api\/auth\/login/);
+
+  // A resposta e lida procurando o EMV do Pix (sempre comeca com 000201) em vez
+  // de depender de um nome exato de campo. A documentacao ja errou uma vez.
+  assert.match(veopag, /startsWith\("000201"\)/);
+  assert.match(veopag, /function encontrarEmv/);
 });
 
 test("o webhook nao conta a mesma venda duas vezes", async () => {

@@ -115,20 +115,55 @@ export async function createPixCharge(input: CreatePixInput): Promise<CreatePixR
     );
   }
 
-  const data = (await response.json()) as {
-    qrCodeResponse?: { transactionId?: string; status?: string; qrcode?: string; amount?: number };
-  };
-  const qr = data.qrCodeResponse;
-  if (!qr?.qrcode || !qr.transactionId) {
-    throw new Error("Resposta da VeoPag veio sem QR Code");
+  const data = (await response.json()) as Record<string, unknown>;
+
+  // A documentação da VeoPag já errou o caminho do endpoint uma vez. Em vez de
+  // confiar num formato exato de resposta, procuramos o código Pix onde ele
+  // plausivelmente esteja. O EMV do Pix sempre começa com "000201", o que
+  // torna a identificação segura mesmo sem saber o nome do campo.
+  const emv = encontrarEmv(data);
+  if (!emv) {
+    console.error("Resposta da VeoPag sem QR reconhecível:", JSON.stringify(data).slice(0, 400));
+    throw new VeoPagError("Resposta da VeoPag veio sem QR Code", 502, JSON.stringify(data));
   }
 
   return {
-    transactionId: qr.transactionId,
-    status: qr.status ?? "PENDING",
-    qrcode: qr.qrcode,
-    amount: qr.amount ?? input.amount,
+    transactionId: encontrarTexto(data, ["transactionId", "transaction_id", "id", "txid"]) ?? input.externalId,
+    status: encontrarTexto(data, ["status"]) ?? "PENDING",
+    qrcode: emv,
+    amount: input.amount,
   };
+}
+
+/** Procura em profundidade o primeiro texto com cara de EMV de Pix. */
+function encontrarEmv(node: unknown, profundidade = 0): string | null {
+  if (profundidade > 4) return null;
+  if (typeof node === "string") return node.startsWith("000201") && node.length > 50 ? node : null;
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      const achado = encontrarEmv(item, profundidade + 1);
+      if (achado) return achado;
+    }
+    return null;
+  }
+  if (node && typeof node === "object") {
+    for (const value of Object.values(node)) {
+      const achado = encontrarEmv(value, profundidade + 1);
+      if (achado) return achado;
+    }
+  }
+  return null;
+}
+
+/** Procura em profundidade o primeiro texto sob uma das chaves dadas. */
+function encontrarTexto(node: unknown, chaves: string[], profundidade = 0): string | null {
+  if (profundidade > 4 || !node || typeof node !== "object") return null;
+  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+    if (chaves.includes(key) && typeof value === "string" && value) return value;
+    const achado = encontrarTexto(value, chaves, profundidade + 1);
+    if (achado) return achado;
+  }
+  return null;
 }
 
 /**
