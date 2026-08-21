@@ -8,6 +8,18 @@
 
 const DEFAULT_BASE_URL = "https://api.veopag.com";
 
+/** Erro da VeoPag com o status HTTP, para separar recusa do cliente de falha nossa. */
+export class VeoPagError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly detail: string,
+  ) {
+    super(message);
+    this.name = "VeoPagError";
+  }
+}
+
 // A documentação exige cachear o token: ele vale 1 hora e o endpoint de login
 // bloqueia com 429 depois de 25 tentativas por IP a cada 15 minutos.
 const TOKEN_TTL_MS = 55 * 60 * 1000;
@@ -83,7 +95,22 @@ export async function createPixCharge(input: CreatePixInput): Promise<CreatePixR
   });
 
   if (!response.ok) {
-    throw new Error(`VeoPag recusou a cobrança (HTTP ${response.status})`);
+    // A VeoPag explica a recusa em texto claro ("Depósito mínimo é R$ 5,00").
+    // Engolir isso e mostrar "tente de novo" faz o cliente tentar de novo para
+    // sempre, sem nunca descobrir que o problema é o valor.
+    const detalhe = await response.text();
+    let mensagem = "";
+    try {
+      const json = JSON.parse(detalhe) as { message?: string; error?: string };
+      mensagem = json.message ?? json.error ?? "";
+    } catch {
+      /* resposta não-JSON: fica com a mensagem genérica */
+    }
+    throw new VeoPagError(
+      mensagem || `VeoPag recusou a cobrança (HTTP ${response.status})`,
+      response.status,
+      detalhe,
+    );
   }
 
   const data = (await response.json()) as {

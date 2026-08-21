@@ -1,7 +1,7 @@
 import { getDb } from "../../../db";
 import { orders } from "../../../db/schema";
 import { findExtra, findSoup, MAX_CART_ITEMS, MAX_EXTRA_QUANTITY } from "../../../data/soups";
-import { createPixCharge } from "../../../server/veopag";
+import { createPixCharge, VeoPagError } from "../../../server/veopag";
 
 type Body = {
   items?: unknown;
@@ -110,6 +110,11 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Falha ao criar cobrança", error);
+    // Recusa da VeoPag (400) é problema do pedido e o cliente precisa ler o
+    // motivo — "Depósito mínimo é R$ 5,00" resolve, "tente de novo" não.
+    if (error instanceof VeoPagError && error.status >= 400 && error.status < 500) {
+      return bad(error.message, 400);
+    }
     return bad("Não conseguimos gerar o Pix agora. Tente de novo em instantes.", 502);
   }
 
