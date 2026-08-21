@@ -271,13 +271,20 @@ export default function Page() {
         if (!ativo || dados.status !== "paid") return;
 
         setPagamentoConfirmado(true);
-        window.fbq?.("track", "Purchase", {
-          content_ids: cart,
-          content_type: "product",
-          currency: "BRL",
-          num_items: cart.length,
-          value: cartTotal,
-        });
+        // eventID igual ao do servidor (o id do pedido). O webhook manda o mesmo
+        // Purchase pela Conversions API; sem esse par, a venda contaria em dobro.
+        window.fbq?.(
+          "track",
+          "Purchase",
+          {
+            content_ids: cart,
+            content_type: "product",
+            currency: "BRL",
+            num_items: cart.length,
+            value: cartTotal,
+          },
+          { eventID: orderId },
+        );
       } catch {
         /* rede instável: a próxima tentativa resolve */
       }

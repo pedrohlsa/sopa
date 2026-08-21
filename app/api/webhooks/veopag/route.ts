@@ -1,6 +1,7 @@
-import { eq, or } from "drizzle-orm";
+import { eq, or, type SQL } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { orders } from "../../../../db/schema";
+import { sendPurchase } from "../../../../server/meta";
 import { isValidWebhookSignature } from "../../../../server/veopag";
 
 /**
@@ -88,6 +89,8 @@ export async function POST(request: Request) {
         ...(transactionId ? { transactionId } : {}),
       })
       .where(condition);
+
+    if (novoStatus === "paid") await avisarMeta(condition);
   } catch (error) {
     // Devolver erro faz a VeoPag reenviar, que é o comportamento desejado:
     // perder uma confirmação significa cliente pagando e cozinha sem saber.
@@ -96,4 +99,48 @@ export async function POST(request: Request) {
   }
 
   return new Response("ok", { status: 200 });
+}
+
+/**
+ * Avisa o Meta que a compra aconteceu.
+ *
+ * Roda depois de gravar o pagamento e nunca derruba o webhook: se o Meta estiver
+ * fora do ar, o pedido continua pago e a cozinha continua vendo. Perder um evento
+ * de anúncio é ruim; perder um pedido é muito pior.
+ *
+ * `purchaseSentAt` existe porque a VeoPag reenvia o webhook em caso de falha —
+ * sem essa marca, a mesma venda seria contada de novo a cada reenvio.
+ */
+async function avisarMeta(condition: SQL<unknown> | undefined) {
+  if (!condition) return;
+  try {
+    const db = getDb();
+    const [order] = await db.select().from(orders).where(condition).limit(1);
+    if (!order || order.purchaseSentAt) return;
+
+    const items = JSON.parse(order.items) as { id: string; quantity: number }[];
+    const resultado = await sendPurchase({
+      orderId: order.id,
+      value: order.total,
+      contents: items,
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      fbp: order.fbp,
+      fbclid: order.fbclid,
+      clientIp: order.clientIp,
+      userAgent: order.userAgent,
+      createdAt: order.createdAt,
+    });
+
+    if (resultado.sent) {
+      await db
+        .update(orders)
+        .set({ purchaseSentAt: Math.floor(Date.now() / 1000) })
+        .where(eq(orders.id, order.id));
+    } else {
+      console.warn("Purchase não enviado ao Meta:", order.id, resultado.reason);
+    }
+  } catch (error) {
+    console.error("Falha ao avisar o Meta", error);
+  }
 }

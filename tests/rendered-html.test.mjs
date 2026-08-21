@@ -98,10 +98,30 @@ test("fires the funnel events and never fakes Purchase", async () => {
   assert.match(page, /"track", "InitiateCheckout"/);
 
   // Purchase passou a existir porque o pagamento agora acontece no nosso dominio.
-  // Mas ele so pode sair depois de confirmacao real: quem confirma e o webhook
+  // Mas so pode sair depois de confirmacao real: quem confirma e o webhook
   // assinado da VeoPag, e a tela apenas pergunta ao servidor se ja chegou.
-  assert.match(page, /"track", "Purchase"/);
+  assert.match(page, /"Purchase"/);
   assert.match(page, /dados\.status !== "paid"/);
   // Nunca preso a um clique: botao apertado nao e dinheiro recebido.
   assert.doesNotMatch(page, /onClick=\{[^}]*Purchase/);
+
+  // O mesmo Purchase sai pelo navegador e pelo servidor. Sem eventID igual dos
+  // dois lados, o Meta conta a venda duas vezes e o ROAS vira ficcao.
+  assert.match(page, /eventID: orderId/);
+  const meta = await readFile(new URL("../server/meta.ts", import.meta.url), "utf8");
+  assert.match(meta, /event_id: input\.orderId/);
+  // Dado pessoal so vai para o Meta com hash.
+  assert.match(meta, /SHA-256/);
+  assert.doesNotMatch(meta, /ph: \[input\.customerPhone\]/);
+});
+
+test("o webhook nao conta a mesma venda duas vezes", async () => {
+  const webhook = await readFile(new URL("../app/api/webhooks/veopag/route.ts", import.meta.url), "utf8");
+
+  // A VeoPag reenvia o webhook quando falha. Sem esta marca, cada reenvio
+  // mandaria um Purchase novo para o Meta.
+  assert.match(webhook, /order\.purchaseSentAt/);
+  assert.match(webhook, /purchaseSentAt: Math\.floor/);
+  // Avisar o Meta nunca pode derrubar o webhook: perder o pedido e pior.
+  assert.match(webhook, /catch \(error\) \{\s*console\.error\("Falha ao avisar o Meta"/);
 });
