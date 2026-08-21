@@ -151,7 +151,7 @@ section { margin: 0 auto; max-width: var(--shell); padding: 0 18px; }
 }
 .menu-card.is-featured { grid-template-columns: 1fr; border-color: #f0c3a8; }
 .menu-photo { height: 100%; width: 100%; object-fit: cover; background: #efe4d3; }
-.menu-card.is-featured .menu-photo { aspect-ratio: 16 / 10; }
+.menu-card.is-featured .menu-photo { aspect-ratio: 16 / 10; height: auto; }
 .menu-body { display: flex; flex-direction: column; gap: 5px; padding: 12px 13px; }
 .menu-badge {
   align-self: flex-start;
